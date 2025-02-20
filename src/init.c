@@ -1,3 +1,4 @@
+#include "noreturn.h"
 #include <flint/flint.h> /* flint_set_abort */
 #include <R_ext/Rdynload.h> /* DL_FUNC, ... */
 #include <R_ext/Visibility.h> /* attribute_visible */
@@ -60,7 +61,7 @@ const char *R_flint_ops1[] =
 	"gamma", "lgamma", "digamma", "trigamma",
 	/* Math2 (2) : */
 	"round", "signif",
-	/* Summary (9) : */
+	/* Summary (10) : */
 	"min", "max", "range",
 	"sum", "prod", "mean",
 	"any", "all", "anyNA", "is.unsorted",

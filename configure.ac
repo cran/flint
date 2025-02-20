@@ -1,6 +1,6 @@
 AC_PREREQ([2.72])
 AC_INIT([flint],
-        [0.0.1],
+        [0.0.2],
         [https://github.com/jaganmn/flint/issues],
         [],
         [https://github.com/jaganmn/flint])
@@ -48,6 +48,8 @@ fi
 
 AC_PROG_CC([])
 AC_PROG_SED([])
+
+R_INCLUDE_DIR=`"${R_HOME}/bin/R" --no-echo --vanilla -e "cat(R.home(\"include\"))"`
 
 CC=`"${R_HOME}/bin/R" CMD config CC`
 CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
@@ -155,7 +157,17 @@ AC_CHECK_HEADER([gmp.h], [],
 AC_CHECK_HEADER([mpfr.h], [],
                 [AC_MSG_ERROR([failed to compile GNU MPFR header, see https://www.mpfr.org/])])
 AC_CHECK_HEADER([flint/flint.h], [],
-                [AC_MSG_ERROR([failed to compile FLINT header, see https://flintlib.org/])])
+                [AC_MSG_ERROR([failed to compile FLINT header, see https://flintlib.org/])],
+                [
+#if defined __STDC_VERSION__ && __STDC_VERSION__ >= 201112L
+# include <stdnoreturn.h>
+#else
+# undef _Noreturn
+# define _Noreturn
+# undef noreturn
+# define noreturn
+#endif
+                ])
 
 AC_CHECK_TYPE([mpfr_uprec_t], [],
               [AC_MSG_ERROR([GNU MPFR missing unsigned precision type])],
@@ -192,7 +204,7 @@ AC_CHECK_SIZEOF([mpfr_exp_t], [], [[#include <mpfr.h>]])
 
 AC_MSG_CHECKING([for R_XLEN_T_MAX in range of mp_limb_t])
 save_CPPFLAGS="${CPPFLAGS}"
-CPPFLAGS="${CPPFLAGS} -I${R_HOME}/include"
+CPPFLAGS="${CPPFLAGS} -I${R_INCLUDE_DIR}"
 AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 #include <gmp.h>
 #include <Rinternals.h>
