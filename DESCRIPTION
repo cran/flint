@@ -1,7 +1,7 @@
 Package: flint
-Version: 0.0.2
+Version: 0.0.3
 VersionNote: sync configure.ac
-Date: 2025-02-20
+Date: 2025-02-23
 Title: Fast Library for Number Theory
 Description: 
 	An R interface to 'FLINT' <https://flintlib.org/>, a C library for
@@ -19,7 +19,7 @@ Description:
 	Library of Mathematical Functions <https://dlmf.nist.gov/>.  The R
 	interface defines S4 classes, generic functions, and methods for
 	representation and basic operations as well as plain R functions
-	matching and vectorizing entry points in the C library.
+	mirroring and vectorizing entry points in the C library.
 License: GPL (>= 2)
 URL: https://github.com/jaganmn/flint
 BugReports: https://github.com/jaganmn/flint/issues
@@ -33,8 +33,8 @@ Imports: stats
 SystemRequirements: flint (>= 3), mpfr (>= 3.1), gmp
 SystemRequirementsNote: purely informational as we use configure tests
 NeedsCompilation: yes
-Packaged: 2025-02-20 01:04:42 UTC; mikael
+Packaged: 2025-02-23 07:13:03 UTC; mikael
 Author: Mikael Jagan [aut, cre] (<https://orcid.org/0000-0002-3542-2938>)
 Maintainer: Mikael Jagan <jaganmn@mcmaster.ca>
 Repository: CRAN
-Date/Publication: 2025-02-20 08:30:02 UTC
+Date/Publication: 2025-02-23 23:40:11 UTC

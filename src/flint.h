@@ -9,28 +9,38 @@
 #include <stddef.h> /* size_t */
 #include <stdio.h> /* vsnprintf */
 #include <string.h> /* strlen, memset, memcpy, memmove */
-
 #include <gmp.h> /* mp_limb_t */
 #include <mpfr.h> /* mpfr_uprec_t, mpfr_uexp_t */
-
-#include <Rconfig.h> /* R_INLINE, ENABLE_NLS */
-
-#ifdef ENABLE_NLS
-# include <libintl.h> /* dgettext, dngettext */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
 #endif
-
+#include "noreturn.h"
+#include <flint/flint.h>
+#include <flint/longlong.h>
+#include <flint/ulong_extras.h>
+#include <flint/long_extras.h>
+#include <flint/double_extras.h>
+#include <flint/fmpz.h>
+#include <flint/fmpq.h>
+#include <flint/mag.h>
+#include <flint/arf.h>
+#include <flint/acf.h>
+#include <flint/arb.h>
+#include <flint/acb.h>
+#include "revertnoreturn.h"
+#include <Rconfig.h> /* R_INLINE, ENABLE_NLS */
 #include <R_ext/Arith.h> /* R_FINITE, ISNAN, ... */
 #include <R_ext/Complex.h> /* Rcomplex */
 #include <R_ext/Error.h> /* Rf_error, Rf_warning */
 #include <R_ext/Memory.h> /* R_alloc */
+#include <R_ext/Rdynload.h> /* DL_FUNC, ... */
+#include <R_ext/Visibility.h> /* attribute_visible */
 #include <Rinternals.h> /* SEXP, ... */
 #include <Rversion.h> /* R_VERSION */
 
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
-
-#ifndef ENABLE_NLS
+#ifdef ENABLE_NLS
+# include <libintl.h> /* dgettext, dngettext */
+#else
 # define dgettext(Domain, String) (String)
 # define dngettext(Domain, String, StringP, N) (((N) == 1) ? String : StringP)
 #endif
@@ -170,10 +180,6 @@ const char *R_flint_ops2[16];
 
 extern
 const char *R_flint_ops1[60];
-
-#if R_VERSION < R_Version(4, 5, 0)
-void CLEAR_ATTRIB(SEXP);
-#endif /* < 4.5.0 */
 
 char *R_alloc_snprintf(size_t, const char *, ...);
 

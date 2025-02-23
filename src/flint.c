@@ -1,13 +1,3 @@
-#include <gmp.h>
-#include "noreturn.h"
-#include <flint/flint.h>
-#include <flint/fmpz.h>
-#include <flint/fmpq.h>
-#include <flint/mag.h>
-#include <flint/arf.h>
-#include <flint/acf.h>
-#include <flint/arb.h>
-#include <flint/acb.h>
 #include "flint.h"
 
 #define R_FLINT_SWITCH(class, template) \
@@ -62,10 +52,15 @@ void acf_zero(acf_t res)
 }
 #endif
 
+#if __FLINT_RELEASE < 30100
+FLINT_NORETURN
+#endif
 void R_flint_abort(void)
 {
 	Rf_error(_("caught exception in libflint"));
+#if __FLINT_RELEASE >= 30100
 	return;
+#endif
 }
 
 void *R_flint_get_pointer(SEXP object)

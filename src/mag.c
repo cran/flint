@@ -1,15 +1,3 @@
-#include <gmp.h>
-#include <mpfr.h>
-#include "noreturn.h"
-#include <flint/flint.h>
-#include <flint/fmpz.h>
-#include <flint/fmpq.h>
-#include <flint/mag.h>
-#include <flint/arf.h>
-#include <flint/acf.h>
-#ifndef HAVE_MAG_GET_D_LOWER
-#include <flint/double_extras.h>
-#endif
 #include "flint.h"
 
 #ifndef HAVE_MAG_GET_D_LOWER
@@ -27,7 +15,13 @@ double mag_get_d_lower(const mag_t z)
 			return ldexp(1.0, 1000);
 	}
 	else
-		return d_mul_2exp(MAG_MAN(z), (int) MAG_EXP(z) - MAG_BITS);
+		return
+#ifdef HAVE_D_MUL_2EXP
+			d_mul_2exp
+#else
+			ldexp
+#endif
+			((double) MAG_MAN(z), (int) MAG_EXP(z) - MAG_BITS);
 }
 #endif
 

@@ -1,6 +1,6 @@
 AC_PREREQ([2.72])
 AC_INIT([flint],
-        [0.0.2],
+        [0.0.3],
         [https://github.com/jaganmn/flint/issues],
         [],
         [https://github.com/jaganmn/flint])
@@ -76,6 +76,13 @@ if test "x${R_FLINT_CPPFLAGS+x}" = "x" &&
 				pkg_CPPFLAGS=`"${PKG_CONFIG}" --cflags ${pkg}`
 				pkg_LDFLAGS=`"${PKG_CONFIG}" --libs-only-L --libs-only-other ${pkg}`
 				pkg_LIBS=`"${PKG_CONFIG}" --libs-only-l ${pkg}`
+				pkg_LIBS_extra=
+				if test "x${pkg}" = "xflint" &&
+				   "${PKG_CONFIG}" --exists "${pkg} < 3.1.0"; then
+					dnl FLINT 3.0.x installs broken flint.pc
+					pkg_LIBS_extra=-lflint
+				fi
+				pkg_LIBS="${pkg_LIBS_extra} ${pkg_LIBS}"
 				CPPFLAGS="${pkg_CPPFLAGS} ${R_FLINT_CPPFLAGS} ${CPPFLAGS}"
 				LDFLAGS="${pkg_LDFLAGS} ${R_FLINT_CPPFLAGS} ${LDFLAGS}"
 				LIBS="${R_FLINT_LIBS} ${LIBS}"
@@ -90,6 +97,7 @@ if test "x${R_FLINT_CPPFLAGS+x}" = "x" &&
 							 [${pkg_LIBS}])
 				if test "x${pkg_found}" = "xno"; then
 				pkg_LIBS=`"${PKG_CONFIG}" --libs-only-l --static flint`
+				pkg_LIBS="${pkg_LIBS_extra} ${pkg_LIBS}"
 				AC_MSG_NOTICE([checking whether --libs --static suffices for linking lib${pkg}])
 				AC_CHECK_LIB([${pkg}], [${pkg_fn}],
 							 [pkg_found=yes], [pkg_found=no],
@@ -158,16 +166,12 @@ AC_CHECK_HEADER([mpfr.h], [],
                 [AC_MSG_ERROR([failed to compile GNU MPFR header, see https://www.mpfr.org/])])
 AC_CHECK_HEADER([flint/flint.h], [],
                 [AC_MSG_ERROR([failed to compile FLINT header, see https://flintlib.org/])],
-                [
-#if defined __STDC_VERSION__ && __STDC_VERSION__ >= 201112L
-# include <stdnoreturn.h>
-#else
-# undef _Noreturn
-# define _Noreturn
-# undef noreturn
-# define noreturn
-#endif
-                ])
+                [[
+#undef _Noreturn
+#define _Noreturn
+#undef noreturn
+#define noreturn
+                ]])
 
 AC_CHECK_TYPE([mpfr_uprec_t], [],
               [AC_MSG_ERROR([GNU MPFR missing unsigned precision type])],
@@ -267,6 +271,30 @@ AC_CHECK_FUNC([arb_init], [],
               [AC_MSG_ERROR([FLINT missing Arb sublibrary])])
 
 AC_CHECK_FUNCS([acf_abs acf_arg acf_conj acf_div_ui acf_is_finite acf_is_inf acf_is_nan acf_is_zero acf_nan acf_one acf_zero fmpq_clog_ui mag_div_ui_lower mag_expm1_lower mag_get_d_lower mag_log1p_lower], [], [])
+
+dnl 'd_mul_2exp' availability must be tested specially as it is declared
+dnl static in flint/double_extras.h
+AC_MSG_CHECKING([for d_mul_2exp])
+AC_LINK_IFELSE([AC_LANG_SOURCE([[
+#undef _Noreturn
+#define _Noreturn
+#undef noreturn
+#define noreturn
+#include <flint/double_extras.h>
+int main()
+{
+	d_mul_2exp(0.0, 0);
+	return 0;
+}
+               ]])],
+               [
+                AC_MSG_RESULT([yes])
+                AC_DEFINE([HAVE_D_MUL_2EXP], [1],
+                          [Define to 1 if you have the 'd_mul_2exp' function.])
+               ],
+               [
+                AC_MSG_RESULT([no])
+               ])
 
 AC_SUBST(R_FLINT_CPPFLAGS)
 AC_SUBST(R_FLINT_CFLAGS)
