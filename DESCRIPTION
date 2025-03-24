@@ -1,18 +1,18 @@
 Package: flint
-Version: 0.0.3
+Version: 0.0.4
 VersionNote: sync configure.ac
-Date: 2025-02-23
+Date: 2025-03-23
 Title: Fast Library for Number Theory
 Description: 
 	An R interface to 'FLINT' <https://flintlib.org/>, a C library for
 	number theory.  'FLINT' extends GNU 'MPFR' <https://www.mpfr.org/>
-	and GNU 'MP' <https://gmplib.org/> with support for arithmetic in
-	standard rings (the integers, the integers modulo n, the rational,
-	p-adic, real, and complex numbers) as well as vectors, matrices,
-	polynomials, and power series over rings.  'FLINT' implements
-	midpoint-radius interval arithmetic, also known as ball arithmetic,
-	in the real and complex numbers, enabling computation in arbitrary
-	precision with rigorous propagation of errors; see Johansson (2017)
+	and GNU 'MP' <https://gmplib.org/> with support for operations on
+	standard rings (the integers, the integers modulo n, finite fields,
+	the rational, p-adic, real, and complex numbers) as well as matrices
+	and polynomials over rings.  'FLINT' implements midpoint-radius
+	interval arithmetic, also known as ball arithmetic, in the real and
+	complex numbers, enabling computation in arbitrary precision with
+	rigorous propagation of rounding errors; see Johansson (2017)
 	<doi:10.1109/TC.2017.2690633>.  Finally, 'FLINT' provides ball
 	arithmetic implementations of many special mathematical functions,
 	with high coverage of reference works such as the NIST Digital
@@ -33,8 +33,8 @@ Imports: stats
 SystemRequirements: flint (>= 3), mpfr (>= 3.1), gmp
 SystemRequirementsNote: purely informational as we use configure tests
 NeedsCompilation: yes
-Packaged: 2025-02-23 07:13:03 UTC; mikael
+Packaged: 2025-03-24 04:00:44 UTC; mikael
 Author: Mikael Jagan [aut, cre] (<https://orcid.org/0000-0002-3542-2938>)
 Maintainer: Mikael Jagan <jaganmn@mcmaster.ca>
 Repository: CRAN
-Date/Publication: 2025-02-23 23:40:11 UTC
+Date/Publication: 2025-03-24 04:20:02 UTC
