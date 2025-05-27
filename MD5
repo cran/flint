@@ -1,4 +1,4 @@
-e9e54b05548832679da0fb1fc5123df6 *DESCRIPTION
+29204ee565fe0ba50c940927ac7aeeb8 *DESCRIPTION
 9414d9d635bcbdef4059d8b24ccfe789 *NAMESPACE
 b78073708c44240805fb711b92a5c1a9 *R/00_Class.R
 1d34f431ff2d025b6f00bbc07981fdc6 *R/00_Generic.R
@@ -20,13 +20,13 @@ d82b0f508b15c8523e8412806b937d88 *R/random.R
 0226c9767e0053ad164fab22359ae252 *R/ulong.R
 4d2b96baed675ed67fa1664d5f9828f3 *R/utils.R
 b577dd4189b63f2e2d74eaf1f7c391c8 *R/zzz.R
-4454e632feb75ce4f508807d50b3b12f *build/partial.rdb
+b52aabe9a2757fc86742763db9dafc9b *build/partial.rdb
 131a236039d88977475269c6ee6c6e2c *cleanup
 8da001ce1b225bf755b427e26132804a *cleanup.win
-daab2cd2d87b2c4108bfd118951ca1b2 *configure
-d126f4cc4e2baab18cce26437faf1f42 *configure.ac
+5d155c9c8ce00331fd9e7d5b176b8e0e *configure
+158a24ebf7fe7e76dc6578e6e3611514 *configure.ac
 4a8f3a18ff6461fac011331d909c3b1b *configure.win
-ff9ad3c924903aa459baffae6e6d85d8 *inst/NEWS.Rd
+a632221c783eb9c561cf7428460fb300 *inst/NEWS.Rd
 d4c29502a9b5c3c196519fc620271b0c *man/Constants.Rd
 1f42f1b0de645147d6606a9ea3fe5b00 *man/Part.Rd
 2ee5ae031ec3d4c073058bb75368679c *man/acb-class.Rd
@@ -39,7 +39,7 @@ f9b3fe69a58064857d5f11b137689151 *man/arb_hypgeom_gamma.Rd
 1d0d14668b8b60cb94f8149517257a51 *man/arb_lambertw.Rd
 ebf9f4ae96d6e79207cff5e52b92623c *man/arf-class.Rd
 d5b688b02f19075da1ef377f22256942 *man/c.flint.Rd
-f059ed372fa25db29dd675d2e9d054ec *man/flint-class.Rd
+309dc528027aba117e535b7a8c62193a *man/flint-class.Rd
 d876e0fef54448951cd48d14dcfdd329 *man/flint-defunct.Rd
 a3c8d5f4517a9b20a9e639009fa0d1cf *man/flint-deprecated.Rd
 bcbff2988ec24f2d35cd31e5f955198c *man/flint-notyet.Rd
@@ -61,7 +61,7 @@ b79e52337f303a9a9554752a277a8efc *src/arb_special.c
 285164568a8ace8e5ae69b06b8c07ba6 *src/arb_template.c
 3e948d4c0d6fdc857fe25cede0bba56d *src/arb_template.h
 ad2c4649e7928032371d7aa8b4d8e17d *src/arf.c
-8db6cd8113ce06e7a96c7082d1fcbba6 *src/config.h.in
+e26c0abc419524441275879f569bb26b *src/config.h.in
 2024786a502534e5ed1bd68fdf8083ff *src/flint-win.def
 418509b6f0b58d87a0fa70d82171a9b8 *src/flint.c
 78befc4f118889d3e02d32f9347a36f4 *src/flint.h
@@ -69,7 +69,7 @@ ad2c4649e7928032371d7aa8b4d8e17d *src/arf.c
 78cc187671e782308239bdebc57a41f6 *src/fmpz.c
 963261780d1664c0e7f9488348b8a7d1 *src/init.c
 1b5d9d0fbcc654a43d7dd1c62bc98912 *src/mag.c
-73b48d4963b9a51e01238c3c76ed5919 *src/noreturn.h
+426f67b01e96c009f337797219e3fc69 *src/noreturn.h
 3c31f2cbb0f75770e1dc61b486607034 *src/revertnoreturn.h
 77a4717530abe68ac1bd30a124f6f347 *src/slong.c
 49c20f22a484831177a0ecad4c7be687 *src/ulong.c

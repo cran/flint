@@ -1,6 +1,6 @@
 AC_PREREQ([2.72])
 AC_INIT([flint],
-        [0.0.4],
+        [0.0.5],
         [https://github.com/jaganmn/flint/issues],
         [],
         [https://github.com/jaganmn/flint])
@@ -173,6 +173,25 @@ AC_CHECK_HEADER([flint/flint.h], [],
 #define noreturn
                 ]])
 
+AC_MSG_CHECKING([for flint/flint.h from FLINT 3.1])
+AC_RUN_IFELSE([AC_LANG_SOURCE([[
+#undef _Noreturn
+#define _Noreturn
+#undef noreturn
+#define noreturn
+#include <flint/flint.h>
+int main()
+{
+	return __FLINT_VERSION != 3 || __FLINT_VERSION_MINOR != 1;
+}
+              ]])],
+              [
+               AC_MSG_RESULT([yes])
+               AC_DEFINE([HAVE_FLINT_H_3_1], [1],
+                         [Define to 1 if you have the <flint/flint.h> header file from FLINT 3.1.])
+              ],
+              [AC_MSG_RESULT([no])])
+
 AC_CHECK_TYPE([mpfr_uprec_t], [],
               [AC_MSG_ERROR([GNU MPFR missing unsigned precision type])],
               [[#include <mpfr.h>]])
@@ -209,63 +228,66 @@ AC_CHECK_SIZEOF([mpfr_exp_t], [], [[#include <mpfr.h>]])
 AC_MSG_CHECKING([for R_XLEN_T_MAX in range of mp_limb_t])
 save_CPPFLAGS="${CPPFLAGS}"
 CPPFLAGS="${CPPFLAGS} -I${R_INCLUDE_DIR}"
-AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <gmp.h>
 #include <Rinternals.h>
 int main()
 {
 	return R_XLEN_T_MAX > (mp_limb_t) -1;
 }
-                  ]])],
-                  [AC_MSG_RESULT([yes])],
-                  [
-                   AC_MSG_RESULT([no])
-                   AC_MSG_ERROR([basic vector length can overflow mp_limb_t])
-                  ])
+              ]])],
+              [AC_MSG_RESULT([yes])],
+              [
+               AC_MSG_RESULT([no])
+               AC_MSG_ERROR([basic vector length can overflow mp_limb_t])
+              ])
 CPPFLAGS="${save_CPPFLAGS}"
 
+dnl test "${ac_cv_sizeof_mpfr_prec_t}" -le "${ac_cv_sizeof_mp_limb_t}"
 AC_MSG_CHECKING([for mpfr_uprec_t in range of mp_limb_t])
-AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <mpfr.h>
 int main()
 {
 	return sizeof(mpfr_uprec_t) > sizeof(mp_limb_t);
 }
-                  ]])],
-                  [AC_MSG_RESULT([yes])],
-                  [
-                   AC_MSG_RESULT([no])
-                   AC_MSG_ERROR([GNU MPFR precision can overflow mp_limb_t])
-                  ])
+              ]])],
+              [AC_MSG_RESULT([yes])],
+              [
+               AC_MSG_RESULT([no])
+               AC_MSG_ERROR([GNU MPFR precision can overflow mp_limb_t])
+              ])
 
+dnl test "${ac_cv_sizeof_mpfr_exp_t}" -le "${ac_cv_sizeof_mp_limb_t}"
 AC_MSG_CHECKING([for mpfr_uexp_t in range of mp_limb_t])
-AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <mpfr.h>
 int main()
 {
 	return sizeof(mpfr_uexp_t) > sizeof(mp_limb_t);
 }
-                  ]])],
-                  [AC_MSG_RESULT([yes])],
-                  [
-                   AC_MSG_RESULT([no])
-                   AC_MSG_ERROR([GNU MPFR exponent can overflow mp_limb_t])
-                  ])
+              ]])],
+              [AC_MSG_RESULT([yes])],
+              [
+               AC_MSG_RESULT([no])
+               AC_MSG_ERROR([GNU MPFR exponent can overflow mp_limb_t])
+              ])
 
+dnl test "${ac_cv_sizeof_mp_limb_t}" -le "${ac_cv_sizeof_size_t}"
 AC_MSG_CHECKING([for mp_limb_t in range of size_t])
-AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <stddef.h>
 #include <gmp.h>
 int main()
 {
 	return sizeof(mp_limb_t) > sizeof(size_t);
 }
-                  ]])],
-                  [AC_MSG_RESULT([yes])],
-                  [
-                   AC_MSG_RESULT([no])
-                   AC_MSG_ERROR([flint vector length can overflow size_t])
-                  ])
+              ]])],
+              [AC_MSG_RESULT([yes])],
+              [
+               AC_MSG_RESULT([no])
+               AC_MSG_ERROR([flint vector length can overflow size_t])
+              ])
 
 AC_CHECK_FUNC([arb_init], [],
               [AC_MSG_ERROR([FLINT missing Arb sublibrary])])
@@ -292,9 +314,7 @@ int main()
                 AC_DEFINE([HAVE_D_MUL_2EXP], [1],
                           [Define to 1 if you have the 'd_mul_2exp' function.])
                ],
-               [
-                AC_MSG_RESULT([no])
-               ])
+               [AC_MSG_RESULT([no])])
 
 AC_SUBST(R_FLINT_CPPFLAGS)
 AC_SUBST(R_FLINT_CFLAGS)

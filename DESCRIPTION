@@ -1,7 +1,7 @@
 Package: flint
-Version: 0.0.4
+Version: 0.0.5
 VersionNote: sync configure.ac
-Date: 2025-03-23
+Date: 2025-05-27
 Title: Fast Library for Number Theory
 Description: 
 	An R interface to 'FLINT' <https://flintlib.org/>, a C library for
@@ -33,8 +33,9 @@ Imports: stats
 SystemRequirements: flint (>= 3), mpfr (>= 3.1), gmp
 SystemRequirementsNote: purely informational as we use configure tests
 NeedsCompilation: yes
-Packaged: 2025-03-24 04:00:44 UTC; mikael
-Author: Mikael Jagan [aut, cre] (<https://orcid.org/0000-0002-3542-2938>)
+Packaged: 2025-05-27 18:26:45 UTC; mikael
+Author: Mikael Jagan [aut, cre] (ORCID:
+    <https://orcid.org/0000-0002-3542-2938>)
 Maintainer: Mikael Jagan <jaganmn@mcmaster.ca>
 Repository: CRAN
-Date/Publication: 2025-03-24 04:20:02 UTC
+Date/Publication: 2025-05-27 18:50:02 UTC

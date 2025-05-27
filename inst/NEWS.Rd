@@ -1,6 +1,19 @@
 \name{NEWS}
 \title{News for \R{} Package \pkg{flint}}
 \newcommand{\GH}{\href{https://github.com/jaganmn/flint/issues/#1}{GH##1}}
+\section{Changes in version 0.0.5 (2025-05-27)}{
+  \subsection{Installation}{
+    \itemize{
+      \item \file{configure} tests for \file{flint/flint.h} from FLINT
+      3.1 more explicitly, and \file{src/noreturn.h} uses the result of
+      this test.  Thanks to Brian Ripley for checks linking FLINT 3.2.
+
+      \item \file{configure.ac} calls macro \code{AC_RUN_IFELSE} instead
+      of macro \code{AC_COMPILE_IFELSE} where the former was always
+      intended.
+    }
+  }
+}
 \section{Changes in version 0.0.4 (2025-03-23)}{
   \subsection{Documentation}{
     \itemize{
