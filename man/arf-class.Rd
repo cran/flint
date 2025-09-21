@@ -1,8 +1,19 @@
 \name{arf-class}
 \alias{arf-class}
 \alias{arf}
-\alias{.arf}
+\alias{arf.array}
 \alias{!,arf-method}
+\alias{\%*\%,ANY,arf-method}
+\alias{\%*\%,arf,ANY-method}
+\alias{\%*\%,arf,ulong-method}
+\alias{\%*\%,arf,slong-method}
+\alias{\%*\%,arf,fmpz-method}
+\alias{\%*\%,arf,fmpq-method}
+\alias{\%*\%,arf,mag-method}
+\alias{\%*\%,arf,arf-method}
+\alias{\%*\%,arf,acf-method}
+\alias{\%*\%,arf,arb-method}
+\alias{\%*\%,arf,acb-method}
 \alias{+,arf,missing-method}
 \alias{-,arf,missing-method}
 \alias{Complex,arf-method}
@@ -22,14 +33,65 @@
 \alias{Summary,arf-method}
 \alias{anyNA,arf-method}
 \alias{as.vector,arf-method}
+\alias{backsolve,ANY,arf-method}
+\alias{backsolve,arf,ANY-method}
+\alias{backsolve,arf,ulong-method}
+\alias{backsolve,arf,slong-method}
+\alias{backsolve,arf,fmpz-method}
+\alias{backsolve,arf,fmpq-method}
+\alias{backsolve,arf,mag-method}
+\alias{backsolve,arf,arf-method}
+\alias{backsolve,arf,acf-method}
+\alias{backsolve,arf,arb-method}
+\alias{backsolve,arf,acb-method}
+\alias{chol,arf-method}
+\alias{chol2inv,arf-method}
 \alias{coerce,ANY,arf-method}
-\alias{initialize,arf-method}
+\alias{colMeans,arf-method}
+\alias{colSums,arf-method}
+\alias{crossprod,ANY,arf-method}
+\alias{crossprod,arf,ANY-method}
+\alias{crossprod,arf,ulong-method}
+\alias{crossprod,arf,slong-method}
+\alias{crossprod,arf,fmpz-method}
+\alias{crossprod,arf,fmpq-method}
+\alias{crossprod,arf,mag-method}
+\alias{crossprod,arf,arf-method}
+\alias{crossprod,arf,acf-method}
+\alias{crossprod,arf,arb-method}
+\alias{crossprod,arf,acb-method}
+\alias{det,arf-method}
+\alias{determinant,arf-method}
 \alias{is.finite,arf-method}
 \alias{is.infinite,arf-method}
 \alias{is.na,arf-method}
 \alias{is.nan,arf-method}
 \alias{is.unsorted,arf-method}
 \alias{mean,arf-method}
+\alias{rowMeans,arf-method}
+\alias{rowSums,arf-method}
+\alias{solve,ANY,arf-method}
+\alias{solve,arf,ANY-method}
+\alias{solve,arf,ulong-method}
+\alias{solve,arf,slong-method}
+\alias{solve,arf,fmpz-method}
+\alias{solve,arf,fmpq-method}
+\alias{solve,arf,mag-method}
+\alias{solve,arf,arf-method}
+\alias{solve,arf,acf-method}
+\alias{solve,arf,arb-method}
+\alias{solve,arf,acb-method}
+\alias{tcrossprod,ANY,arf-method}
+\alias{tcrossprod,arf,ANY-method}
+\alias{tcrossprod,arf,ulong-method}
+\alias{tcrossprod,arf,slong-method}
+\alias{tcrossprod,arf,fmpz-method}
+\alias{tcrossprod,arf,fmpq-method}
+\alias{tcrossprod,arf,mag-method}
+\alias{tcrossprod,arf,arf-method}
+\alias{tcrossprod,arf,acf-method}
+\alias{tcrossprod,arf,arb-method}
+\alias{tcrossprod,arf,acb-method}
 \docType{class}
 \title{Arbitrary Precision Floating-Point Real Numbers}
 \description{
@@ -40,25 +102,70 @@
   and \code{Inf}.
 }
 \usage{
-## The class generator function:
-.arf(\dots)
+## Class generator functions
 
-## Mode 1: initialize with zeros
-## .arf(length = 0L)
-##
-## Mode 2: initialize with vector
-## .arf(length = length(x), x)
+arf(x = 0, length = 0L, names = NULL)
+
+arf.array(x = 0, dim = length(x), dimnames = NULL)
 }
 \arguments{
-  \item{\dots}{
-    arguments passed to methods for \code{\link{initialize}}.}
+  \item{x}{
+    an atomic or \code{\linkS4class{flint}} vector containing data for
+    conversion to \code{arf}.}
+  \item{length}{
+    a numeric vector of length one giving the length of the return
+    value.  If that exceeds the length of \code{x}, then \code{x} is
+    recycled.  Non-integer values are rounded in the direction of zero.}
+  \item{names}{
+    the \code{names} slot of the return value, either \code{NULL} or a
+    character vector of equal length.  Non-character \code{names} are
+    coerced to character.}
+  \item{dim}{
+    the \code{dim} slot of the return value, an integer vector of
+    nonzero length.  If the product exceeds the length of \code{x}, then
+    \code{x} is recycled.  Non-integer numeric \code{dim} are coerced to
+    integer.}
+  \item{dimnames}{
+    the \code{dimnames} slot of the return value, either \code{NULL} or
+    a list of length equal to the length of \code{dim}.  The components
+    are either \code{NULL} or character vectors of length given by
+    \code{dim}.  Non-character vector components of \code{dimnames} are
+    coerced to character.}
 }
 \value{
-  The class generator function returns \code{\link{new}("arf", \dots)}.
+  A \code{arf} vector, possibly an array; see \sQuote{Details}.
+}
+\details{
+  The class generator function has four distinct usages:
+  \preformatted{arf()
+arf(length=)
+arf(x)
+arf(x, length=)}
+  The first usage generates an empty vector.  The second usage generates
+  a zero vector of the indicated length.  The third usage converts
+  \code{x}, preserving dimensions, dimension names, and names.  The
+  fourth usage converts \code{x}, recycling its elements to the
+  indicated length and discarding its dimensions, dimension names, and
+  names.  Attempts to recycle \code{x} of length zero to nonzero length
+  are an error.
+
+  Usage of \code{arf.array} is modelled after \code{\link{array}}.
+}
+\section{Conversion}{
+  Real numbers and real parts of complex numbers are rounded according
+  to the default precision and rounding mode set by
+  \code{\link{flintPrec}} and \code{\link{flintRnd}}.  Imaginary parts
+  of complex numbers are discarded.
+
+  Character strings are converted using function \code{mpfr_strtofr}
+  from the \acronym{GNU} \acronym{MPFR} library with argument
+  \code{base} set to 0 and argument \code{rnd} set according to the
+  default rounding mode; see
+  \url{https://www.mpfr.org/mpfr-current/mpfr.html#Assignment-Functions}.
 }
 \section{Slots}{
   \describe{
-    \item{\code{.xData}, \code{names}}{
+    \item{\code{.xData}, \code{dim}, \code{dimnames}, \code{names}}{
       inherited from virtual class \code{\linkS4class{flint}}.}
   }
 }
@@ -71,6 +178,18 @@
     \item{\code{!}}{
       \code{signature(x = "arf")}:\cr
       equivalent to (but faster than) \code{x == 0}.}
+    \item{\code{\%*\%}, \code{crossprod}, \code{tcrossprod}}{
+      \code{signature(x = "arf", y = "arf")}:\cr
+      \code{signature(x = "arf", y = "ANY")}:\cr
+      \code{signature(x = "ANY", y = "arf")}:\cr
+      matrix products.  The \dQuote{other} operand must be atomic or
+      inherit from virtual class \code{\linkS4class{flint}}.
+      \code{crossprod} and \code{tcrossprod} behave as if \code{y = x}
+      when \code{y} is missing or \code{NULL}.  Operands are promoted as
+      necessary and must be conformable (have compatible dimensions).
+      Non-array operands of length \code{k} are handled as 1-by-\code{k}
+      or \code{k}-by-1 matrices depending on the call.  The return value
+      is approximate insofar that it may not be correctly rounded.}
     \item{\code{+}}{
       \code{signature(e1 = "arf", e2 = "missing")}:\cr
       returns a copy of the argument.}
@@ -87,21 +206,22 @@
       \code{\link[methods]{S4groupGeneric}}.  Notably, the logarithmic,
       exponential, (inverse) trigonometric, (inverse) hyperbolic, and
       gamma-related member functions are not yet implemented.  Users
-      wanting those can (for now) operate on
-      \code{as(x, "\linkS4class{arb}")}.}
+      wanting those can (for now) operate on \code{\link{arb}(x)}.}
     \item{\code{Math2}}{
       \code{signature(x = "arf")}:\cr
       decimal rounding according to a second argument \code{digits}; see
       \code{\link[methods]{S4groupGeneric}}.  There are just two member
       member functions: \code{\link{round}}, \code{\link{signif}}.}
     \item{\code{Ops}}{
-      \code{signature(e1 = "ANY", e2 = "arf")}:\cr
+      \code{signature(e1 = "arf", e2 = "arf")}:\cr
       \code{signature(e1 = "arf", e2 = "ANY")}:\cr
+      \code{signature(e1 = "ANY", e2 = "arf")}:\cr
       binary arithmetic, comparison, and logical operators; see
       \code{\link[methods]{S4groupGeneric}}.  The \dQuote{other} operand
       must be atomic or inherit from virtual class
-      \code{\linkS4class{flint}}.  The operands are recycled and
-      promoted as necessary.}
+      \code{\linkS4class{flint}}.  Operands are promoted as necessary.
+      Array operands must be conformable (have identical dimensions).
+      Non-array operands are recycled.}
     \item{\code{Summary}}{
       \code{signature(x = "arf")}:\cr
       univariate summary statistics; see
@@ -126,28 +246,54 @@
       to types \code{"character"}, \code{"symbol"} (synonym
       \code{"name"}), \code{"pairlist"}, \code{"list"}, and
       \code{"expression"}, which are not \dQuote{number-like}, is
-      handled specially.}
+      handled specially.  See also \code{\link{asVector}}.}
+    \item{\code{backsolve}}{
+      \code{signature(r = "arf", x = "arf")}:\cr
+      \code{signature(r = "arf", x = "ANY")}:\cr
+      \code{signature(r = "ANY", x = "arf")}:\cr
+      solution of the triangular system \code{op2(op1(r)) \%*\% y = x},
+      where \code{op1=ifelse(upper.tri, triu, tril)} and
+      \code{op2=ifelse(transpose, t, identity)} and \code{upper.tri} and
+      \code{transpose} are optional logical arguments with default
+      values \code{TRUE} and \code{FALSE}, respectively.  The
+      \dQuote{other} operand must be atomic or inherit from virtual
+      class \code{\linkS4class{flint}}.  If \code{x} is missing, then
+      the return value is the inverse of \code{op2(op1(r))}, as if
+      \code{x} were the identity matrix.  Operands are promoted as
+      necessary and must be conformable (have compatible dimensions).
+      Non-array \code{x} are handled as \code{length(x)}-by-1 matrices.}
+    \item{\code{chol}}{
+      \code{signature(x = "arf")}:\cr
+      returns the upper triangular Cholesky factor of the positive
+      definite matrix whose upper triangular part is the upper
+      triangular part of \code{x}.}
+    \item{\code{chol2inv}}{
+      \code{signature(x = "arf")}:\cr
+      returns the inverse of the positive definite matrix whose upper
+      triangular Cholesky factor is the upper triangular part of
+      \code{x}.}
     \item{\code{coerce}}{
       \code{signature(from = "ANY", to = "arf")}:\cr
-      returns \code{.arf(x = from)}.  An error is signaled if the class
-      or type of \code{from} is not supported by the method for
-      \code{\link{initialize}}.}
+      returns the value of \code{arf(from)}.}
+    \item{\code{colSums}, \code{colMeans}}{
+      \code{signature(x = "arf")}:\cr
+      returns an \code{arf} vector or array containing the column sums
+      or means of \code{x}, defined as sums or means over dimensions
+      \code{1:dims}.}
+    \item{\code{det}}{
+      \code{signature(x = "arf")}:\cr
+      returns the determinant of \code{x} as an \code{arf} vector of
+      length 1.}
+    \item{\code{determinant}}{
+      \code{signature(x = "arf")}:\cr
+      returns a list with components \code{modulus} and \code{sign}
+      specifying the determinant of \code{x}, following the \pkg{base}
+      function, hence see \code{\link{determinant}}.}
     \item{\code{format}}{
       \code{signature(x = "arf")}:\cr
       returns a character vector suitable for printing, using scientific
       format.  Optional arguments control the output; see
       \code{\link{format-methods}}.}
-    \item{\code{initialize}}{
-      \code{signature(.Object = "arf", length = "\var{numeric}")}:\cr
-      returns \code{.Object} after setting its \code{.xData} slot.  The
-      new slot value is an external pointer to an array of the
-      corresponding \proglang{C} type, which is newly allocated and
-      initialized entirely with zeros.  \code{.Object} is not copied, so
-      all references are affected.}
-    \item{\code{initialize}}{
-      \code{signature(.Object = "arf", length = "\var{numeric}", x = "\var{atomic|flint}")}:\cr
-      as above, except that the new slot value points to an array
-      initialized with values from \code{x}.}
     \item{\code{is.finite}}{
       \code{signature(x = "arf")}:\cr
       returns a logical vector indicating which elements of \code{x}
@@ -168,6 +314,22 @@
     \item{\code{mean}}{
       \code{signature(x = "arf")}:\cr
       returns the arithmetic mean.}
+    \item{\code{rowSums}, \code{rowMeans}}{
+      \code{signature(x = "arf")}:\cr
+      returns an \code{arf} vector or array containing the row sums or
+      means of \code{x}, defined as sums or means over dimensions
+      \code{(dims+1):length(dim(x))}.}
+    \item{\code{solve}}{
+      \code{signature(a = "arf", b = "arf")}:\cr
+      \code{signature(a = "arf", b = "ANY")}:\cr
+      \code{signature(a = "ANY", b = "arf")}:\cr
+      solution of the general system \code{a \%*\% x = b}.  The
+      \dQuote{other} operand must be atomic or inherit from virtual
+      class \code{\linkS4class{flint}}.  If \code{b} is missing, then
+      the return value is the inverse of \code{a}, as if \code{b} were
+      the identity matrix.  Operands are promoted as necessary and must
+      be conformable (have compatible dimensions).  Non-array \code{b}
+      are handled as \code{length(b)}-by-1 matrices.}
   }
 }
 \seealso{

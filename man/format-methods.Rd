@@ -19,16 +19,16 @@
 \S4method{format}{slong}(x, base = 10L, \dots)
 \S4method{format}{fmpz}(x, base = 10L, \dots)
 \S4method{format}{fmpq}(x, base = 10L, \dots)
-\S4method{format}{mag}(x, base = 10L, digits = NULL, sep = NULL,
-       rnd = flintRnd(), \dots)
-\S4method{format}{arf}(x, base = 10L, digits = NULL, sep = NULL,
-       rnd = flintRnd(), \dots)
-\S4method{format}{acf}(x, base = 10L, digits = NULL, sep = NULL,
-       rnd = flintRnd(), \dots)
-\S4method{format}{arb}(x, base = 10L, digits = NULL, sep = NULL,
-       rnd = flintRnd(), \dots)
-\S4method{format}{acb}(x, base = 10L, digits = NULL, sep = NULL,
-       rnd = flintRnd(), \dots)
+\S4method{format}{mag}(x, base = 10L,                digits.mag = NULL,
+       sep = NULL, rnd = flintRnd(), \dots)
+\S4method{format}{arf}(x, base = 10L, digits = NULL,
+       sep = NULL, rnd = flintRnd(), \dots)
+\S4method{format}{acf}(x, base = 10L, digits = NULL,
+       sep = NULL, rnd = flintRnd(), \dots)
+\S4method{format}{arb}(x, base = 10L, digits = NULL, digits.mag = NULL,
+       sep = NULL, rnd = flintRnd(), \dots)
+\S4method{format}{acb}(x, base = 10L, digits = NULL, digits.mag = NULL,
+       sep = NULL, rnd = flintRnd(), \dots)
 }
 \arguments{
   \item{x}{
@@ -38,14 +38,20 @@
     and 16 correspond to binary, decimal, and hexadecimal output.
     Digits are represented by characters \samp{[0-9A-Za-z]}, in that
     significance order, hence the maximum 10+26+26=62.}
-  \item{digits}{
+  \item{digits, digits.mag}{
     an integer indicating how many digits of the significand are
-    reported when formatting floating type vectors.  When more than one
-    digit is printed, a radix point inserted after the first digit.
-    Value 0 is equivalent to the minimum integer \code{d} such that all
-    elements of \code{x} are represented exactly by \code{d} digits in
-    the specified base.  The default value \code{NULL} is equivalent to
-    \code{getOption("digits", 99999L)}.}
+    reported when formatting floating-point numbers.
+    \code{\linkS4class{arf}} and \code{arf} components of
+    \code{\linkS4class{acf}}, \code{\linkS4class{arb}}, and
+    \code{\linkS4class{acb}} use \code{digits}.
+    \code{\linkS4class{mag}} and \code{mag} components of
+    \code{\linkS4class{arb}} and \code{\linkS4class{acb}} use
+    \code{digits.mag}.  When more than one digit is printed, a radix
+    point is inserted after the first digit.  Value 0 is equivalent to
+    the minimum integer \code{d} such that all elements of \code{x} are
+    represented exactly by \code{d} digits in the specified base.  The
+    default values \code{NULL} are equivalent to
+    \code{getOption("digits")} and \code{getOption("digits.mag", 4L)}.}
   \item{sep}{
     a nonempty character string used to separate the significand from
     the exponent.  The default value \code{NULL} is a equivalent to
@@ -62,16 +68,18 @@
     further optional arguments, though these are currently unused.}
 }
 \value{
-  A character vector containing \acronym{ASCII} strings of equal length.
+  A character vector containing \acronym{ASCII} strings of equal length,
+  preserving the length, dimensions, dimension names, and names of
+  \code{x}.
 }
 \examples{
-q <- .fmpq(num = c(-1L, 1L) * 0:5, den = 1:6)
+q <- fmpq(num = c(-1L, 1L) * 0:5, den = 1:6)
 for (b in 2:8) {
     cat("base = ", b, ":\n", sep = "")
     print(format(q, base = b), quote = FALSE, width = 12L)
 }
 
-z <- .acb(real = .arb(mid = pi, rad = 0.5 * pi))
+z <- acb(real = arb(mid = pi, rad = 0.5 * pi))
 format(z)
 format(z, base = 62L, sep = "*[62]^")
 strsplit(format(Re(z), digits = 80L), "[( )]")[[1L]][c(FALSE, TRUE)]

@@ -1,8 +1,7 @@
 \name{flint-package}
-\alias{flint}
 \alias{flint-package}
 \alias{flintABI}
-\alias{flintIdentical}
+\alias{flintClass}
 \alias{flintLength}
 \alias{flintPrec}
 \alias{flintRnd}
@@ -17,7 +16,7 @@
 }
 \usage{
 flintABI()
-flintIdentical(object, reference)
+flintClass(object)
 flintLength(object, exact = TRUE)
 flintPrec(prec = NULL)
 flintRnd(rnd = NULL)
@@ -26,9 +25,9 @@ flintTriple(object)
 flintVersion()
 }
 \arguments{
-  \item{object, reference}{
-    objects inheriting from virtual class \code{\linkS4class{flint}}.
-    Otherwise, the behaviour is undefined.}
+  \item{object}{
+    an \R{} object, typically inheriting from virtual class
+    \code{\linkS4class{flint}}.}
   \item{exact}{
     a logical indicating if the length should be represented exactly as
     an object of class \code{\linkS4class{ulong}}.}
@@ -39,7 +38,7 @@ flintVersion()
   \item{rnd}{
     a new default value for the rounding mode of inexact floating-point
     operations, if non-\code{NULL}.  The value should be a character
-    string indicating a rounding mode for signed floating types.
+    string indicating a rounding mode for signed floating-point types.
     Valid characters are \samp{[Uu]} (towards positive infinity),
     \samp{[Dd]} (towards negative infinity), \samp{[Zz]} (towards zero),
     \samp{[Aa]} (away from zero), and \samp{[Nn]} (to nearest, with
@@ -69,10 +68,12 @@ flintVersion()
   configure time and at load time that linked \proglang{C} libraries
   were configured for the same ABI.
 
-  \code{flintIdentical} tests whether its arguments inherit from the
-  same nonvirtual subclass of \code{\linkS4class{flint}} and have
-  identical length, elements, and names.  If the elements are recursive
-  structures, then they are compared recursively.
+  \code{flintClass} returns a character string naming the direct
+  nonvirtual subclass of virtual class \code{flint} from which
+  \code{object} inherits.  (Hence a possible value is \code{"ulong"}
+  but not the name of any subclass of \code{\linkS4class{ulong}}.)
+  If \code{object} does not inherit from virtual class \code{flint},
+  then the return value is \code{\link{NA_character_}}.
 
   \code{flintLength} returns a representation of the length of
   \code{object}.  If \code{exact = TRUE}, then the return value is an
@@ -90,7 +91,9 @@ flintVersion()
   precision are rounded to the next representable number in the
   direction of zero.  Return values not representing the length exactly
   have an attribute \code{off} preserving the rounding error (an integer
-  in \eqn{1,\ldots,2^p}).
+  in \eqn{1,\ldots,2^p}).  If \code{object} does not inherit from
+  virtual class \code{flint}, then the return value is
+  \code{\link{NA_integer_}}.
 
   \code{flintPrec} returns the previous default precision.
 
@@ -102,13 +105,17 @@ flintVersion()
   the recursive structure share memory, then the upper bound is exact.
   Recursion starts at the address stored by the \R{} object, not at the
   address of the object itself.  A corollary is that
-  \code{flintSize(object)} is zero for \code{object} of zero length.
+  \code{flintSize(object)} is zero for \code{object} of length zero.
   Another corollary is that the bytes counted by \code{flintSize} and
-  the bytes counted by \code{\link{object.size}} are disjoint.
+  the bytes counted by \code{\link{object.size}} are disjoint.  If
+  \code{object} does not inherit from virtual class \code{flint}, then
+  the return value is \code{\link{NA_real_}} (beneath the class).
 
   \code{flintTriple} returns a character vector of length 3 containing
   the class of \code{object}, the length of \code{object}, and the
-  address stored by \code{object}.
+  address stored by \code{object}.  If \code{object} does not inherit
+  from virtual class \code{flint}, then all of the elements are
+  \code{NA}.
 
   \code{flintVersion} returns a named list of numeric versions with
   elements:

@@ -100,11 +100,14 @@ void R_flint_mag_finalize(SEXP x)
 	return;
 }
 
-SEXP R_flint_mag_initialize(SEXP object, SEXP s_length, SEXP s_x)
+SEXP R_flint_mag_initialize(SEXP object, SEXP s_x, SEXP s_length,
+                            SEXP s_dim, SEXP s_dimnames, SEXP s_names)
 {
-	mp_limb_t j, nx = 0, ny = 0;
+	mp_limb_t jy, nx = 0, ny = 0;
 	R_flint_class_t class = R_FLINT_CLASS_INVALID;
 	int lower = isRndZ(asRnd(R_NilValue, __func__));
+	PROTECT(s_dim = validDim(s_dim));
+	PROTECT(s_dimnames = validDimNames(s_dimnames, s_dim));
 	if (s_x != R_NilValue) {
 		checkType(s_x, R_flint_sexptypes, __func__);
 		if (TYPEOF(s_x) != OBJSXP)
@@ -115,76 +118,71 @@ SEXP R_flint_mag_initialize(SEXP object, SEXP s_length, SEXP s_x)
 				Rf_error(_("foreign external pointer"));
 			nx = R_flint_get_length(s_x);
 		}
-		if (s_length == R_NilValue)
-			ny = nx;
-		else {
-			ny = asLength(s_length, __func__);
-			if (ny > 0 && nx == 0)
-				Rf_error(_("'%s' of length zero cannot be recycled to nonzero length"),
-				         "x");
-		}
+		ny = validLength(s_length, s_dim, nx);
+		if (ny > 0 && nx == 0)
+			Rf_error(_("'%s' of length zero cannot be recycled to nonzero length"),
+			         "x");
 	}
-	else if (s_length != R_NilValue)
-		ny = asLength(s_length, __func__);
 	else
-		ny = 0;
+		ny = validLength(s_length, s_dim, nx);
+	PROTECT(s_names = validNames(s_names, ny));
 	mag_ptr y = (ny) ? flint_calloc(ny, sizeof(mag_t)) : 0;
 	R_flint_set(object, y, ny, (R_CFinalizer_t) &R_flint_mag_finalize);
 	switch (TYPEOF(s_x)) {
 	case NILSXP:
-		for (j = 0; j < ny; ++j)
-			mag_zero(y + j);
+		for (jy = 0; jy < ny; ++jy)
+			mag_zero(y + jy);
 		break;
 	case RAWSXP:
 	{
 		const Rbyte *x = RAW_RO(s_x);
-		for (j = 0; j < ny; ++j)
-			WRAP(mag_set_ui, lower, y + j, x[j % nx]);
+		for (jy = 0; jy < ny; ++jy)
+			WRAP(mag_set_ui, lower, y + jy, x[jy % nx]);
 		break;
 	}
 	case LGLSXP:
 	{
 		const int *x = LOGICAL_RO(s_x);
-		for (j = 0; j < ny; ++j) {
-			if (x[j % nx] == NA_LOGICAL)
-			Rf_error(_("NaN is not representable by '%s'"), "mag");
+		for (jy = 0; jy < ny; ++jy) {
+			if (x[jy % nx] == NA_LOGICAL)
+			Rf_error(_("NaN is not representable by \"%s\""), "mag");
 			else
-			WRAP(mag_set_ui, lower, y + j, (ulong) x[j % nx]);
+			WRAP(mag_set_ui, lower, y + jy, (ulong) x[jy % nx]);
 		}
 		break;
 	}
 	case INTSXP:
 	{
 		const int *x = INTEGER_RO(s_x);
-		for (j = 0; j < ny; ++j) {
-			if (x[j % nx] == NA_INTEGER)
-			Rf_error(_("NaN is not representable by '%s'"), "mag");
-			else if (x[j % nx] >= 0)
-			WRAP(mag_set_ui, lower, y + j, (ulong) x[j % nx]);
+		for (jy = 0; jy < ny; ++jy) {
+			if (x[jy % nx] == NA_INTEGER)
+			Rf_error(_("NaN is not representable by \"%s\""), "mag");
+			else if (x[jy % nx] >= 0)
+			WRAP(mag_set_ui, lower, y + jy, (ulong) x[jy % nx]);
 			else
-			WRAP(mag_set_ui, lower, y + j, (ulong) -x[j % nx]);
+			WRAP(mag_set_ui, lower, y + jy, (ulong) -x[jy % nx]);
 		}
 		break;
 	}
 	case REALSXP:
 	{
 		const double *x = REAL_RO(s_x);
-		for (j = 0; j < ny; ++j) {
-			if (ISNAN(x[j % nx]))
-			Rf_error(_("NaN is not representable by '%s'"), "mag");
+		for (jy = 0; jy < ny; ++jy) {
+			if (ISNAN(x[jy % nx]))
+			Rf_error(_("NaN is not representable by \"%s\""), "mag");
 			else
-			WRAP(mag_set_d, lower, y + j, x[j % nx]);
+			WRAP(mag_set_d, lower, y + jy, x[jy % nx]);
 		}
 		break;
 	}
 	case CPLXSXP:
 	{
 		const Rcomplex *x = COMPLEX_RO(s_x);
-		for (j = 0; j < ny; ++j) {
-			if (ISNAN(x[j % nx].r))
-			Rf_error(_("NaN is not representable by '%s'"), "mag");
+		for (jy = 0; jy < ny; ++jy) {
+			if (ISNAN(x[jy % nx].r))
+			Rf_error(_("NaN is not representable by \"%s\""), "mag");
 			else
-			WRAP(mag_set_d, lower, y + j, x[j % nx].r);
+			WRAP(mag_set_d, lower, y + jy, x[jy % nx].r);
 		}
 		break;
 	}
@@ -198,8 +196,8 @@ SEXP R_flint_mag_initialize(SEXP object, SEXP s_length, SEXP s_x)
 		arf_init(tmp);
 		const char *s;
 		char *t;
-		for (j = 0; j < ny; ++j) {
-			s = CHAR(STRING_ELT(s_x, (R_xlen_t) (j % nx)));
+		for (jy = 0; jy < ny; ++jy) {
+			s = CHAR(STRING_ELT(s_x, (R_xlen_t) (jy % nx)));
 			mpfr_strtofr(r, s, &t, 0, rnd);
 			if (t <= s)
 				break;
@@ -209,11 +207,11 @@ SEXP R_flint_mag_initialize(SEXP object, SEXP s_length, SEXP s_x)
 			if (*s != '\0')
 				break;
 			arf_set_mpfr(tmp, r);
-			WRAP(arf_get_mag, lower, y + j, tmp);
+			WRAP(arf_get_mag, lower, y + jy, tmp);
 		}
 		mpfr_clear(r);
 		arf_clear(tmp);
-		if (j < ny)
+		if (jy < ny)
 			Rf_error(_("invalid input in string conversion"));
 		break;
 	}
@@ -222,26 +220,26 @@ SEXP R_flint_mag_initialize(SEXP object, SEXP s_length, SEXP s_x)
 		case R_FLINT_CLASS_ULONG:
 		{
 			const ulong *x = R_flint_get_pointer(s_x);
-			for (j = 0; j < ny; ++j)
-				WRAP(mag_set_ui, lower, y + j, x[j % nx]);
+			for (jy = 0; jy < ny; ++jy)
+				WRAP(mag_set_ui, lower, y + jy, x[jy % nx]);
 			break;
 		}
 		case R_FLINT_CLASS_SLONG:
 		{
 			const slong *x = R_flint_get_pointer(s_x);
-			for (j = 0; j < ny; ++j) {
-				if (x[j % nx] >= 0)
-				WRAP(mag_set_ui, lower, y + j, (ulong) x[j % nx]);
+			for (jy = 0; jy < ny; ++jy) {
+				if (x[jy % nx] >= 0)
+				WRAP(mag_set_ui, lower, y + jy, (ulong) x[jy % nx]);
 				else
-				WRAP(mag_set_ui, lower, y + j, (ulong) -1 - (ulong) x[j % nx] + 1);
+				WRAP(mag_set_ui, lower, y + jy, (ulong) -1 - (ulong) x[jy % nx] + 1);
 			}
 			break;
 		}
 		case R_FLINT_CLASS_FMPZ:
 		{
 			const fmpz *x = R_flint_get_pointer(s_x);
-			for (j = 0; j < ny; ++j)
-				WRAP(mag_set_fmpz, lower, y + j, x + j % nx);
+			for (jy = 0; jy < ny; ++jy)
+				WRAP(mag_set_fmpz, lower, y + jy, x + jy % nx);
 			break;
 		}
 		case R_FLINT_CLASS_FMPQ:
@@ -251,9 +249,9 @@ SEXP R_flint_mag_initialize(SEXP object, SEXP s_length, SEXP s_x)
 			arf_rnd_t rnd = (lower) ? ARF_RND_DOWN : ARF_RND_UP;
 			arf_t q;
 			arf_init(q);
-			for (j = 0; j < ny; ++j) {
-				arf_fmpz_div_fmpz(q, fmpq_numref(x + j % nx), fmpq_denref(x + j % nx), prec, rnd);
-				WRAP(arf_get_mag, lower, y + j, q);
+			for (jy = 0; jy < ny; ++jy) {
+				arf_fmpz_div_fmpz(q, fmpq_numref(x + jy % nx), fmpq_denref(x + jy % nx), prec, rnd);
+				WRAP(arf_get_mag, lower, y + jy, q);
 			}
 			arf_clear(q);
 			break;
@@ -261,22 +259,22 @@ SEXP R_flint_mag_initialize(SEXP object, SEXP s_length, SEXP s_x)
 		case R_FLINT_CLASS_MAG:
 		{
 			mag_srcptr x = R_flint_get_pointer(s_x);
-			for (j = 0; j < ny; ++j)
-				mag_set(y + j, x + j % nx);
+			for (jy = 0; jy < ny; ++jy)
+				mag_set(y + jy, x + jy % nx);
 			break;
 		}
 		case R_FLINT_CLASS_ARF:
 		{
 			arf_srcptr x = R_flint_get_pointer(s_x);
-			for (j = 0; j < ny; ++j)
-				WRAP(arf_get_mag, lower, y + j, x + j % nx);
+			for (jy = 0; jy < ny; ++jy)
+				WRAP(arf_get_mag, lower, y + jy, x + jy % nx);
 			break;
 		}
 		case R_FLINT_CLASS_ACF:
 		{
 			acf_srcptr x = R_flint_get_pointer(s_x);
-			for (j = 0; j < ny; ++j)
-				WRAP(arf_get_mag, lower, y + j, acf_realref(x + j % nx));
+			for (jy = 0; jy < ny; ++jy)
+				WRAP(arf_get_mag, lower, y + jy, acf_realref(x + jy % nx));
 			break;
 		}
 		case R_FLINT_CLASS_ARB:
@@ -289,22 +287,8 @@ SEXP R_flint_mag_initialize(SEXP object, SEXP s_length, SEXP s_x)
 		}
 		break;
 	}
-	if (s_x != R_NilValue && ny > 0 && ny <= R_XLEN_T_MAX) {
-	SEXP sx = Rf_getAttrib(s_x, R_NamesSymbol);
-	if (sx != R_NilValue && XLENGTH(sx) > 0) {
-	PROTECT(sx);
-	if (nx == ny)
-	R_do_slot_assign(object, R_flint_symbol_names, sx);
-	else {
-	SEXP sy = Rf_allocVector(STRSXP, (R_xlen_t) ny);
-	for (j = 0; j < ny; ++j)
-		SET_STRING_ELT(sy, (R_xlen_t) j,
-		               STRING_ELT(sx, (R_xlen_t) (j % nx)));
-	R_do_slot_assign(object, R_flint_symbol_names, sy);
-	}
-	UNPROTECT(1);
-	}
-	}
+	setDDNN(object, s_dim, s_dimnames, s_names);
+	UNPROTECT(3);
 	return object;
 }
 
@@ -343,9 +327,8 @@ SEXP R_flint_mag_format(SEXP object, SEXP s_base,
 	const char *sep = asSep(s_sep, __func__);
 	int lower = isRndZ(asRnd(s_rnd, __func__));
 	mpfr_rnd_t rnd = (lower) ? MPFR_RNDZ : MPFR_RNDA;
-	SEXP ans = Rf_allocVector(STRSXP, (R_xlen_t) n);
+	SEXP ans = PROTECT(Rf_allocVector(STRSXP, (R_xlen_t) n));
 	if (n) {
-	PROTECT(ans);
 	mag_srcptr x = R_flint_get_pointer(object);
 	mpfr_exp_t e__;
 	slong p__;
@@ -391,7 +374,7 @@ SEXP R_flint_mag_format(SEXP object, SEXP s_base,
 		ncsep = strlen(sep),
 		ncexp = mpz_sizeinbase(z, abase),
 		ncmax = ncrad + ncman + ncsep + 1;
-	char *buffer = R_alloc(ncmax + ncexp + 1, 1);
+	char *buffer = R_alloc(ncmax + ncexp + 1, sizeof(char));
 	mpz_get_str(buffer, base, z);
 	ncexp = strlen(buffer);
 	ncmax += ncexp;
@@ -465,40 +448,25 @@ SEXP R_flint_mag_format(SEXP object, SEXP s_base,
 	mpfr_clear(f);
 	arf_clear(tmp);
 	MPFR_ERANGE_RESET;
-	SEXP nms = R_do_slot(object, R_flint_symbol_names);
-	if (XLENGTH(nms) > 0) {
-		PROTECT(nms);
-		Rf_setAttrib(ans, R_NamesSymbol, nms);
-		UNPROTECT(1);
 	}
+	setDDNN1(ans, object);
 	UNPROTECT(1);
-	}
 	return ans;
 }
 
-SEXP R_flint_mag_ops2(SEXP s_op, SEXP s_x, SEXP s_y)
+SEXP R_flint_mag_ops2(SEXP s_op, SEXP s_x, SEXP s_y, SEXP s_dots)
 {
 	size_t op = strmatch(CHAR(STRING_ELT(s_op, 0)), R_flint_ops2);
-	mp_limb_t
+	mp_limb_t jz,
 		nx = R_flint_get_length(s_x),
-		ny = R_flint_get_length(s_y);
+		ny = R_flint_get_length(s_y),
+		nz = RECYCLE2(nx, ny);
 	mag_srcptr
 		x = R_flint_get_pointer(s_x),
 		y = R_flint_get_pointer(s_y);
-	if (nx > 0 && ny > 0 && ((nx < ny) ? ny % nx : nx % ny))
-		Rf_warning(_("longer object length is not a multiple of shorter object length"));
-	mp_limb_t j, n = RECYCLE2(nx, ny);
+	int dz[3];
+	int mop = checkConformable(s_x, s_y, nx, ny, matrixop(op), dz);
 	int lower = isRndZ(asRnd(R_NilValue, __func__));
-#define COMMON \
-	do { \
-	SEXP nms; \
-	if ((nx == n && XLENGTH(nms = R_do_slot(s_x, R_flint_symbol_names)) > 0) || \
-	    (ny == n && XLENGTH(nms = R_do_slot(s_y, R_flint_symbol_names)) > 0)) { \
-		PROTECT(nms); \
-		R_do_slot_assign(ans, R_flint_symbol_names, nms); \
-		UNPROTECT(1); \
-	} \
-	} while (0)
 	switch (op) {
 	case  1: /*   "+" */
 	case  2: /*   "-" */
@@ -507,67 +475,67 @@ SEXP R_flint_mag_ops2(SEXP s_op, SEXP s_x, SEXP s_y)
 	case  7: /*   "^" */
 	{
 		SEXP ans = PROTECT(newObject("mag"));
-		mag_ptr z = (n) ? flint_calloc(n, sizeof(mag_t)) : 0;
-		R_flint_set(ans, z, n, (R_CFinalizer_t) &R_flint_mag_finalize);
+		mag_ptr z = (nz) ? flint_calloc(nz, sizeof(mag_t)) : 0;
+		R_flint_set(ans, z, nz, (R_CFinalizer_t) &R_flint_mag_finalize);
 		switch (op) {
 		case 1: /*   "+" */
-			for (j = 0; j < n; ++j)
-				WRAP(mag_add, lower, z + j, x + j % nx, y + j % ny);
+			for (jz = 0; jz < nz; ++jz)
+				WRAP(mag_add, lower, z + jz, x + jz % nx, y + jz % ny);
 			break;
 		case 2: /*   "-" */
-			for (j = 0; j < n; ++j)
-				if (mag_cmp(x + j % nx, y + j % ny) >= 0)
-				WRAP(mag_sub, lower, z + j, x + j % nx, y + j % ny);
+			for (jz = 0; jz < nz; ++jz)
+				if (mag_cmp(x + jz % nx, y + jz % ny) >= 0)
+				WRAP(mag_sub, lower, z + jz, x + jz % nx, y + jz % ny);
 				else
-				WRAP(mag_sub, lower, z + j, y + j % ny, x + j % nx);
+				WRAP(mag_sub, lower, z + jz, y + jz % ny, x + jz % nx);
 			break;
 		case 3: /*   "*" */
-			for (j = 0; j < n; ++j)
-				WRAP(mag_mul, lower, z + j, x + j % nx, y + j % ny);
+			for (jz = 0; jz < nz; ++jz)
+				WRAP(mag_mul, lower, z + jz, x + jz % nx, y + jz % ny);
 			break;
 		case 6: /*   "/" */
-			for (j = 0; j < n; ++j)
-				WRAP(mag_div, lower, z + j, x + j % nx, y + j % ny);
+			for (jz = 0; jz < nz; ++jz)
+				WRAP(mag_div, lower, z + jz, x + jz % nx, y + jz % ny);
 			break;
 		case 7: /*   "^" */
 		{
 			mag_srcptr b, e;
 			mag_t a;
 			mag_init(a);
-			for (j = 0; j < n; ++j) {
-				b = x + j % nx;
-				e = y + j % ny;
+			for (jz = 0; jz < nz; ++jz) {
+				b = x + jz % nx;
+				e = y + jz % ny;
 				if (mag_is_zero(e) || mag_cmp_2exp_si(b, 0) == 0)
 					/* b^0, 1^e = 1 */
-					mag_one(z + j);
+					mag_one(z + jz);
 				else if (mag_cmp_2exp_si(e, 0) == 0)
 					/* b^1 = b */
-					mag_set(z + j, b);
+					mag_set(z + jz, b);
 				else if (mag_is_inf(e) || mag_is_special(b)) {
 					/* b^Inf, 0^e, Inf^e = 0|Inf */
 					if (mag_cmp_2exp_si(b, 0) < 0)
-						mag_zero(z + j);
+						mag_zero(z + jz);
 					else
-						mag_inf(z + j);
+						mag_inf(z + jz);
 				}
 				else if (mag_cmp_2exp_si(b, 0) > 0) {
 					/* b^e = exp(e * log(b)) */
 					WRAP(mag_log, lower, a, b);
 					WRAP(mag_mul, lower, a, e, a);
-					WRAP(mag_exp, lower, z + j, a);
+					WRAP(mag_exp, lower, z + jz, a);
 				}
 				else {
 					/* b^e = exp(-(e * -log(b))) */
 					WRAP(mag_neg_log, !lower, a, b);
 					WRAP(mag_mul, !lower, a, e, a);
-					WRAP(mag_expinv, lower, z + j, a);
+					WRAP(mag_expinv, lower, z + jz, a);
 				}
 			}
 			mag_clear(a);
 			break;
 		}
 		}
-		COMMON;
+		setDDNN2(ans, s_x, s_y, nz, nx, ny, mop);
 		UNPROTECT(1);
 		return ans;
 	}
@@ -580,70 +548,60 @@ SEXP R_flint_mag_ops2(SEXP s_op, SEXP s_x, SEXP s_y)
 	case 14: /*   "&" */
 	case 15: /*   "|" */
 	{
-		ERROR_TOO_LONG(n, R_XLEN_T_MAX);
-		SEXP ans = PROTECT(Rf_allocVector(LGLSXP, (R_xlen_t) n));
+		ERROR_TOO_LONG(nz, R_XLEN_T_MAX);
+		SEXP ans = PROTECT(Rf_allocVector(LGLSXP, (R_xlen_t) nz));
 		int *z = LOGICAL(ans);
 		switch (op) {
 		case  8: /*  "==" */
-			for (j = 0; j < n; ++j)
-				z[j] = mag_equal(x + j % nx, y + j % ny) != 0;
+			for (jz = 0; jz < nz; ++jz)
+				z[jz] = mag_equal(x + jz % nx, y + jz % ny) != 0;
 			break;
 		case  9: /*  "!=" */
-			for (j = 0; j < n; ++j)
-				z[j] = mag_equal(x + j % nx, y + j % ny) == 0;
+			for (jz = 0; jz < nz; ++jz)
+				z[jz] = mag_equal(x + jz % nx, y + jz % ny) == 0;
 			break;
 		case 10: /*   "<" */
-			for (j = 0; j < n; ++j)
-				z[j] = mag_cmp(x + j % nx, y + j % ny) < 0;
+			for (jz = 0; jz < nz; ++jz)
+				z[jz] = mag_cmp(x + jz % nx, y + jz % ny) < 0;
 			break;
 		case 11: /*   ">" */
-			for (j = 0; j < n; ++j)
-				z[j] = mag_cmp(x + j % nx, y + j % ny) > 0;
+			for (jz = 0; jz < nz; ++jz)
+				z[jz] = mag_cmp(x + jz % nx, y + jz % ny) > 0;
 			break;
 		case 12: /*  "<=" */
-			for (j = 0; j < n; ++j)
-				z[j] = mag_cmp(x + j % nx, y + j % ny) <= 0;
+			for (jz = 0; jz < nz; ++jz)
+				z[jz] = mag_cmp(x + jz % nx, y + jz % ny) <= 0;
 			break;
 		case 13: /*  ">=" */
-			for (j = 0; j < n; ++j)
-				z[j] = mag_cmp(x + j % nx, y + j % ny) >= 0;
+			for (jz = 0; jz < nz; ++jz)
+				z[jz] = mag_cmp(x + jz % nx, y + jz % ny) >= 0;
 			break;
 		case 14: /*   "&" */
-			for (j = 0; j < n; ++j)
-				z[j] = !mag_is_zero(x + j % nx) && !mag_is_zero(y + j % ny);
+			for (jz = 0; jz < nz; ++jz)
+				z[jz] = !mag_is_zero(x + jz % nx) && !mag_is_zero(y + jz % ny);
 			break;
 		case 15: /*   "|" */
-			for (j = 0; j < n; ++j)
-				z[j] = !mag_is_zero(x + j % nx) || !mag_is_zero(y + j % ny);
+			for (jz = 0; jz < nz; ++jz)
+				z[jz] = !mag_is_zero(x + jz % nx) || !mag_is_zero(y + jz % ny);
 			break;
 		}
-		COMMON;
+		setDDNN2(ans, s_x, s_y, nz, nx, ny, mop);
 		UNPROTECT(1);
 		return ans;
 	}
 	default:
-		Rf_error(_("operation '%s' is not yet implemented for class '%s'"),
+		Rf_error(_("operation '%s' is not yet implemented for class \"%s\""),
 		         CHAR(STRING_ELT(s_op, 0)), "mag");
 		return R_NilValue;
 	}
-#undef COMMON
 }
 
 SEXP R_flint_mag_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 {
 	size_t op = strmatch(CHAR(STRING_ELT(s_op, 0)), R_flint_ops1);
-	mp_limb_t j, n = R_flint_get_length(s_x);
+	mp_limb_t jx, jz, nx = R_flint_get_length(s_x), nz = nx;
 	mag_srcptr x = R_flint_get_pointer(s_x);
 	int lower = isRndZ(asRnd(R_NilValue, __func__));
-#define COMMON \
-	do { \
-	SEXP nms = R_do_slot(s_x, R_flint_symbol_names); \
-	if (XLENGTH(nms) > 0) { \
-		PROTECT(nms); \
-		R_do_slot_assign(ans, R_flint_symbol_names, nms); \
-		UNPROTECT(1); \
-	} \
-	} while (0)
 	switch (op) {
 	case  1: /*       "+" */
 	case  2: /*       "-" */
@@ -672,8 +630,8 @@ SEXP R_flint_mag_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 	case 49: /*  "signif" */
 	{
 		SEXP ans = PROTECT(newObject("mag"));
-		mag_ptr z = (n) ? flint_calloc(n, sizeof(mag_t)) : 0;
-		R_flint_set(ans, z, n, (R_CFinalizer_t) &R_flint_mag_finalize);
+		mag_ptr z = (nz) ? flint_calloc(nz, sizeof(mag_t)) : 0;
+		R_flint_set(ans, z, nz, (R_CFinalizer_t) &R_flint_mag_finalize);
 		switch (op) {
 		case  1: /*       "+" */
 		case  2: /*       "-" */
@@ -681,48 +639,48 @@ SEXP R_flint_mag_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 		case  9: /*      "Re" */
 		case 11: /*     "Mod" */
 		case 13: /*     "abs" */
-			for (j = 0; j < n; ++j)
-				mag_set(z + j, x + j);
+			for (jz = 0; jz < nz; ++jz)
+				mag_set(z + jz, x + jz);
 			break;
 		case 10: /*      "Im" */
-			for (j = 0; j < n; ++j)
-				mag_zero(z + j);
+			for (jz = 0; jz < nz; ++jz)
+				mag_zero(z + jz);
 			break;
 		case 12: /*     "Arg" */
-			for (j = 0; j < n; ++j)
-				if (mag_is_zero(x + j))
-					mag_zero(z + j);
+			for (jz = 0; jz < nz; ++jz)
+				if (mag_is_zero(x + jz))
+					mag_zero(z + jz);
 				else
-					WRAP(mag_const_pi, lower, z + j);
+					WRAP(mag_const_pi, lower, z + jz);
 			break;
 		case 14: /*    "sign" */
-			for (j = 0; j < n; ++j)
-				if (mag_is_zero(x + j))
-					mag_zero(z + j);
+			for (jz = 0; jz < nz; ++jz)
+				if (mag_is_zero(x + jz))
+					mag_zero(z + jz);
 				else
-					mag_one(z + j);
+					mag_one(z + jz);
 			break;
 		case 15: /*    "sqrt" */
-			for (j = 0; j < n; ++j)
-				WRAP(mag_sqrt, lower, z + j, x + j);
+			for (jz = 0; jz < nz; ++jz)
+				WRAP(mag_sqrt, lower, z + jz, x + jz);
 			break;
 		case 16: /*   "floor" */
 		case 18: /*   "trunc" */
 		{
 			fmpz_t r;
 			fmpz_init(r);
-			for (j = 0; j < n; ++j) {
-				if (mag_is_inf(x + j))
-					mag_inf(z + j);
-				if (mag_is_zero(x + j))
-					mag_zero(z + j);
-				else if (fmpz_cmp_si(MAG_EXPREF(x + j),        0) <= 0)
-					mag_zero(z + j);
-				else if (fmpz_cmp_si(MAG_EXPREF(x + j), MAG_BITS) >= 0)
-					mag_set(z + j, x + j);
+			for (jz = 0; jz < nz; ++jz) {
+				if (mag_is_inf(x + jz))
+					mag_inf(z + jz);
+				if (mag_is_zero(x + jz))
+					mag_zero(z + jz);
+				else if (fmpz_cmp_si(MAG_EXPREF(x + jz),        0) <= 0)
+					mag_zero(z + jz);
+				else if (fmpz_cmp_si(MAG_EXPREF(x + jz), MAG_BITS) >= 0)
+					mag_set(z + jz, x + jz);
 				else {
-					mag_get_fmpz_lower(r, x + j);
-					WRAP(mag_set_fmpz, lower, z + j, r);
+					mag_get_fmpz_lower(r, x + jz);
+					WRAP(mag_set_fmpz, lower, z + jz, r);
 				}
 			}
 			fmpz_clear(r);
@@ -732,59 +690,59 @@ SEXP R_flint_mag_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 		{
 			fmpz_t r;
 			fmpz_init(r);
-			for (j = 0; j < n; ++j) {
-				if (mag_is_inf(x + j))
-					mag_inf(z + j);
-				if (mag_is_zero(x + j))
-					mag_zero(z + j);
-				else if (fmpz_cmp_si(MAG_EXPREF(x + j),        0) <= 0)
-					mag_one(z + j);
-				else if (fmpz_cmp_si(MAG_EXPREF(x + j), MAG_BITS) >= 0)
-					mag_set(z + j, x + j);
+			for (jz = 0; jz < nz; ++jz) {
+				if (mag_is_inf(x + jz))
+					mag_inf(z + jz);
+				if (mag_is_zero(x + jz))
+					mag_zero(z + jz);
+				else if (fmpz_cmp_si(MAG_EXPREF(x + jz),        0) <= 0)
+					mag_one(z + jz);
+				else if (fmpz_cmp_si(MAG_EXPREF(x + jz), MAG_BITS) >= 0)
+					mag_set(z + jz, x + jz);
 				else {
-					mag_get_fmpz(r, x + j);
-					WRAP(mag_set_fmpz, lower, z + j, r);
+					mag_get_fmpz(r, x + jz);
+					WRAP(mag_set_fmpz, lower, z + jz, r);
 				}
 			}
 			fmpz_clear(r);
 			break;
 		}
 		case 19: /*  "cummin" */
-			if (n) {
+			if (nz) {
 			mag_set(z, x);
-			for (j = 1; j < n; ++j)
-				mag_min(z + j, z + j - 1, x + j);
+			for (jz = 1; jz < nz; ++jz)
+				mag_min(z + jz, z + jz - 1, x + jz);
 			}
 			break;
 		case 20: /*  "cummax" */
-			if (n) {
+			if (nz) {
 			mag_set(z, x);
-			for (j = 1; j < n; ++j)
-				mag_max(z + j, z + j - 1, x + j);
+			for (jz = 1; jz < nz; ++jz)
+				mag_max(z + jz, z + jz - 1, x + jz);
 			}
 			break;
 		case 21: /*  "cumsum" */
-			if (n) {
+			if (nz) {
 			mag_set(z, x);
-			for (j = 1; j < n; ++j)
-				WRAP(mag_add, lower, z + j, z + j - 1, x + j);
+			for (jz = 1; jz < nz; ++jz)
+				WRAP(mag_add, lower, z + jz, z + jz - 1, x + jz);
 			}
 			break;
 		case 22: /* "cumprod" */
-			if (n) {
+			if (nz) {
 			mag_set(z, x);
-			for (j = 1; j < n; ++j)
-				WRAP(mag_mul, lower, z + j, z + j - 1, x + j);
+			for (jz = 1; jz < nz; ++jz)
+				WRAP(mag_mul, lower, z + jz, z + jz - 1, x + jz);
 			}
 			break;
 		case 23: /*     "log" */
 		case 24: /*   "log10" */
 		case 25: /*    "log2" */
-			for (j = 0; j < n; ++j)
-				if (mag_cmp_2exp_si(x + j, 0) >= 0)
-					WRAP(mag_log, lower, z + j, x + j);
+			for (jz = 0; jz < nz; ++jz)
+				if (mag_cmp_2exp_si(x + jz, 0) >= 0)
+					WRAP(mag_log, lower, z + jz, x + jz);
 				else
-					WRAP(mag_neg_log, lower, z + j, x + j);
+					WRAP(mag_neg_log, lower, z + jz, x + jz);
 			if (op != 23 || s_dots != R_NilValue) {
 			mag_t tmp;
 			mag_init(tmp);
@@ -798,7 +756,7 @@ SEXP R_flint_mag_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 				arf_srcptr base = R_flint_get_pointer(s_base);
 				if (arf_is_nan(base) || arf_sgn(base) < 0) {
 					mag_clear(tmp);
-					Rf_error(_("NaN is not representable by '%s'"), "mag");
+					Rf_error(_("NaN is not representable by \"%s\""), "mag");
 				}
 				if (arf_cmp_2exp_si(base, 0) >= 0)
 					WRAP(arf_get_mag, !lower, tmp, base);
@@ -810,41 +768,41 @@ SEXP R_flint_mag_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 			else
 				WRAP(mag_neg_log, !lower, tmp, tmp);
 			if (mag_is_special(tmp)) {
-				for (j = 0; j < n; ++j)
-					if (mag_is_inf(z + j)) {
+				for (jz = 0; jz < nz; ++jz)
+					if (mag_is_inf(z + jz)) {
 					mag_clear(tmp);
-					Rf_error(_("NaN is not representable by '%s'"), "mag");
+					Rf_error(_("NaN is not representable by \"%s\""), "mag");
 					}
 					else
-					mag_zero(z + j);
+					mag_zero(z + jz);
 			}
 			else if (mag_cmp_2exp_si(tmp, 0) == 0) {
-				for (j = 0; j < n; ++j)
-					if (mag_is_zero(z + j)) {
+				for (jz = 0; jz < nz; ++jz)
+					if (mag_is_zero(z + jz)) {
 					mag_clear(tmp);
-					Rf_error(_("NaN is not representable by '%s'"), "mag");
+					Rf_error(_("NaN is not representable by \"%s\""), "mag");
 					}
 					else
-					mag_inf(z + j);
+					mag_inf(z + jz);
 			}
 			else {
-				for (j = 0; j < n; ++j)
-					WRAP(mag_div, lower, z + j, z + j, tmp);
+				for (jz = 0; jz < nz; ++jz)
+					WRAP(mag_div, lower, z + jz, z + jz, tmp);
 			}
 			mag_clear(tmp);
 			}
 			break;
 		case 26: /*   "log1p" */
-			for (j = 0; j < n; ++j)
-				WRAP(mag_log1p, lower, z + j, x + j);
+			for (jz = 0; jz < nz; ++jz)
+				WRAP(mag_log1p, lower, z + jz, x + jz);
 			break;
 		case 27: /*     "exp" */
-			for (j = 0; j < n; ++j)
-				WRAP(mag_exp, lower, z + j, x + j);
+			for (jz = 0; jz < nz; ++jz)
+				WRAP(mag_exp, lower, z + jz, x + jz);
 			break;
 		case 28: /*   "expm1" */
-			for (j = 0; j < n; ++j)
-				WRAP(mag_expm1, lower, z + j, x + j);
+			for (jz = 0; jz < nz; ++jz)
+				WRAP(mag_expm1, lower, z + jz, x + jz);
 			break;
 		case 48: /*   "round" */
 		{
@@ -864,29 +822,29 @@ SEXP R_flint_mag_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 			if (digits >= 0) {
 			/* f ~ c/10^+digits   <=>   c ~ f*10^+digits */
 			fmpz_pow_ui(p, p, (ulong) digits);
-			for (j = 0; j < n; ++j) {
-				if (mag_is_special(x + j))
-				mag_set(z + j, x + j);
+			for (jz = 0; jz < nz; ++jz) {
+				if (mag_is_special(x + jz))
+				mag_set(z + jz, x + jz);
 				else {
-				arf_set_mag(s, x + j);
+				arf_set_mag(s, x + jz);
 				arf_mul_fmpz(s, s, p, ARF_PREC_EXACT, rnd);
 				arf_get_fmpz(q, s, ARF_RND_NEAR);
 				arf_fmpz_div_fmpz(s, q, p, prec, rnd);
-				WRAP(arf_get_mag, lower, z + j, s);
+				WRAP(arf_get_mag, lower, z + jz, s);
 				}
 			}
 			} else {
 			/* f ~ c*10^-digits   <=>   c ~ f/10^-digits */
 			fmpz_pow_ui(p, p, (ulong) -1 - (ulong) digits + 1);
-			for (j = 0; j < n; ++j) {
-				if (mag_is_special(x + j))
-				mag_set(z + j, x + j);
+			for (jz = 0; jz < nz; ++jz) {
+				if (mag_is_special(x + jz))
+				mag_set(z + jz, x + jz);
 				else {
-				arf_set_mag(s, x + j);
+				arf_set_mag(s, x + jz);
 				arf_div_fmpz(s, s, p, prec, rnd);
 				arf_get_fmpz(q, s, ARF_RND_NEAR);
 				fmpz_mul(q, q, p);
-				WRAP(mag_set_fmpz, lower, z + j, q);
+				WRAP(mag_set_fmpz, lower, z + jz, q);
 				}
 			}
 			}
@@ -916,11 +874,11 @@ SEXP R_flint_mag_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 			fmpz_init(q);
 			fmpz_init(r);
 			arf_init(s);
-			for (j = 0; j < n; ++j) {
-				if (mag_is_special(x + j))
-				mag_set(z + j, x + j);
+			for (jz = 0; jz < nz; ++jz) {
+				if (mag_is_special(x + jz))
+				mag_set(z + jz, x + jz);
 				else {
-				mag_get_fmpq(a, x + j);
+				mag_get_fmpq(a, x + jz);
 				clog = fmpq_clog_ui(a, 10);
 				fmpz_set_si(p, 10);
 				if (clog <= digits) {
@@ -934,7 +892,7 @@ SEXP R_flint_mag_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 				    fmpz_is_odd(q))
 					fmpz_add_si(q, q, fmpz_sgn(r));
 				arf_fmpz_div_fmpz(s, q, p, prec, rnd);
-				WRAP(arf_get_mag, lower, z + j, s);
+				WRAP(arf_get_mag, lower, z + jz, s);
 				} else {
 				fmpz_pow_ui(p, p, (ulong) (clog - digits));
 				fmpz_mul(fmpq_denref(a), fmpq_denref(a), p);
@@ -943,7 +901,7 @@ SEXP R_flint_mag_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 				    fmpz_is_odd(q))
 					fmpz_add_si(q, q, fmpz_sgn(r));
 				fmpz_mul(q, q, p);
-				WRAP(mag_set_fmpz, lower, z + j, q);
+				WRAP(mag_set_fmpz, lower, z + jz, q);
 				}
 				}
 			}
@@ -955,12 +913,12 @@ SEXP R_flint_mag_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 			break;
 		}
 		}
-		COMMON;
+		setDDNN1(ans, s_x);
 		UNPROTECT(1);
 		return ans;
 	}
 	case 55: /*    "mean" */
-		if (n == 0)
+		if (nx == 0)
 			Rf_error(_("'%s' of length zero in '%s'"),
 			         "x", CHAR(STRING_ELT(s_op, 0)));
 	case 50: /*     "min" */
@@ -969,57 +927,64 @@ SEXP R_flint_mag_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 	case 53: /*     "sum" */
 	case 54: /*    "prod" */
 	{
+		nz = (op == 52) ? 2 : 1;
 		SEXP ans = PROTECT(newObject("mag"));
-		mp_limb_t s = (op == 52) ? 2 : 1;
-		mag_ptr z = flint_calloc(s, sizeof(mag_t));
-		R_flint_set(ans, z, s, (R_CFinalizer_t) &R_flint_mag_finalize);
+		mag_ptr z = flint_calloc(nz, sizeof(mag_t));
+		R_flint_set(ans, z, nz, (R_CFinalizer_t) &R_flint_mag_finalize);
 		switch (op) {
 		case 50: /*     "min" */
 			mag_inf(z);
-			for (j = 0; j < n; ++j)
-				if (mag_cmp(z, x + j) > 0)
-					mag_set(z, x + j);
+			for (jx = 0; jx < nx; ++jx)
+				if (mag_cmp(z, x + jx) > 0)
+					mag_set(z, x + jx);
 			break;
 		case 51: /*     "max" */
 			mag_zero(z);
-			for (j = 0; j < n; ++j)
-				if (mag_cmp(z, x + j) < 0)
-					mag_set(z, x + j);
+			for (jx = 0; jx < nx; ++jx)
+				if (mag_cmp(z, x + jx) < 0)
+					mag_set(z, x + jx);
 			break;
 		case 52: /*   "range" */
 		{
-			/* FIXME: GCC 14 -Wstringop-overread with just */
-			/*        else if (mag_cmp(z + 1, x + j) < 0)  */
+			mag_inf(z);
+#ifdef R_FLINT_USE_NAIVE_RANGE
+			/* MJ: GCC 14 gives [-Wstringop-overread].  Why?? */
+			mag_zero(z + 1);
+			for (jx = 0; jx < nx; ++jx)
+				if (mag_cmp(z, x + jx) > 0)
+					mag_set(z, x + jx);
+				else if (mag_cmp(z + 1, x + jx) < 0)
+					mag_set(z + 1, x + jx);
+#else
 			mag_t t;
 			mag_init(t);
 			mag_zero(t);
-			mag_inf(z);
-			mag_zero(z + 1);
-			for (j = 0; j < n; ++j)
-				if (mag_cmp(z, x + j) > 0)
-					mag_set(z, x + j);
-				else if (mag_cmp(t, x + j) < 0)
-					mag_set(t, x + j);
+			for (jx = 0; jx < nx; ++jx)
+				if (mag_cmp(z, x + jx) > 0)
+					mag_set(z, x + jx);
+				else if (mag_cmp(t, x + jx) < 0)
+					mag_set(t, x + jx);
 			mag_set(z + 1, t);
 			mag_clear(t);
+#endif
 			break;
 		}
 		case 53: /*     "sum" */
 			mag_zero(z);
-			for (j = 0; j < n; ++j)
-				WRAP(mag_add, lower, z, z, x + j);
+			for (jx = 0; jx < nx; ++jx)
+				WRAP(mag_add, lower, z, z, x + jx);
 			break;
 		case 54: /*    "prod" */
 			mag_one(z);
-			for (j = 0; j < n; ++j)
-				WRAP(mag_mul, lower, z, z, x + j);
+			for (jx = 0; jx < nx; ++jx)
+				WRAP(mag_mul, lower, z, z, x + jx);
 			break;
 		case 55: /*    "mean" */
 		{
 			mag_zero(z);
-			for (j = 0; j < n; ++j)
-				WRAP(mag_add, lower, z, z, x + j);
-			WRAP(mag_div_ui, lower, z, z, n);
+			for (jx = 0; jx < nx; ++jx)
+				WRAP(mag_add, lower, z, z, x + jx);
+			WRAP(mag_div_ui, lower, z, z, nx);
 			break;
 		}
 		}
@@ -1035,12 +1000,12 @@ SEXP R_flint_mag_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 		int *z = LOGICAL(ans);
 		switch (op) {
 		case 56: /*         "any" */
-			for (j = 0; j < n &&  mag_is_zero(x + j); ++j) ;
-			z[0] = j <  n;
+			for (jx = 0; jx < nx &&  mag_is_zero(x + jx); ++jx) ;
+			z[0] = jx <  nx;
 			break;
 		case 57: /*         "all" */
-			for (j = 0; j < n && !mag_is_zero(x + j); ++j) ;
-			z[0] = j >= n;
+			for (jx = 0; jx < nx && !mag_is_zero(x + jx); ++jx) ;
+			z[0] = jx >= nx;
 			break;
 		case 58: /*       "anyNA" */
 			z[0] = 0;
@@ -1053,10 +1018,10 @@ SEXP R_flint_mag_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 				         "strictly", CHAR(STRING_ELT(s_op, 0)));
 			int strict = LOGICAL_RO(s_strict)[0];
 			if (strict)
-			for (j = 1; j < n && mag_cmp(x, x + 1) <  0; ++j, ++x) ;
+			for (jx = 1; jx < nx && mag_cmp(x, x + 1) <  0; ++jx, ++x) ;
 			else
-			for (j = 1; j < n && mag_cmp(x, x + 1) <= 0; ++j, ++x) ;
-			z[0] = j <  n;
+			for (jx = 1; jx < nx && mag_cmp(x, x + 1) <= 0; ++jx, ++x) ;
+			z[0] = jx <  nx;
 			break;
 		}
 		}
@@ -1069,36 +1034,119 @@ SEXP R_flint_mag_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 	case  6: /*   "is.finite" */
 	case  7: /*           "!" */
 	{
-		ERROR_TOO_LONG(n, R_XLEN_T_MAX);
-		SEXP ans = PROTECT(Rf_allocVector(LGLSXP, (R_xlen_t) n));
+		ERROR_TOO_LONG(nz, R_XLEN_T_MAX);
+		SEXP ans = PROTECT(Rf_allocVector(LGLSXP, (R_xlen_t) nz));
 		int *z = LOGICAL(ans);
 		switch (op) {
 		case  3: /*       "is.na" */
 		case  4: /*      "is.nan" */
-			for (j = 0; j < n; ++j)
-				z[j] = 0;
+			for (jz = 0; jz < nz; ++jz)
+				z[jz] = 0;
 			break;
 		case  5: /* "is.infinite" */
-			for (j = 0; j < n; ++j)
-				z[j] = mag_is_inf(x + j) != 0;
+			for (jz = 0; jz < nz; ++jz)
+				z[jz] = mag_is_inf(x + jz) != 0;
 			break;
 		case  6: /*   "is.finite" */
-			for (j = 0; j < n; ++j)
-				z[j] = mag_is_finite(x + j) != 0;
+			for (jz = 0; jz < nz; ++jz)
+				z[jz] = mag_is_finite(x + jz) != 0;
 			break;
 		case  7: /*           "!" */
-			for (j = 0; j < n; ++j)
-				z[j] = mag_is_zero(x + j) != 0;
+			for (jz = 0; jz < nz; ++jz)
+				z[jz] = mag_is_zero(x + jz) != 0;
 			break;
 		}
-		COMMON;
+		setDDNN1(ans, s_x);
 		UNPROTECT(1);
 		return ans;
 	}
+	case 60: /*     "colSums" */
+	case 61: /*     "rowSums" */
+	case 62: /*    "colMeans" */
+	case 63: /*    "rowMeans" */
+	{
+		int byrow = op == 61 || op == 63, domean = op == 62 || op == 63;
+
+		SEXP dimx = PROTECT(R_do_slot(s_x, R_flint_symbol_dim));
+		if (dimx == R_NilValue || XLENGTH(dimx) < 2)
+			Rf_error(_("'%s' is not a matrix or a higher dimensional array"),
+			         "x");
+		if (domean && nx == 0)
+			Rf_error(_("'%s' of length zero in '%s'"),
+			         "x", CHAR(STRING_ELT(s_op, 0)));
+		const int *dx = INTEGER_RO(dimx);
+		int ndx = LENGTH(dimx);
+
+		SEXP s_off = VECTOR_ELT(s_dots, 1);
+		if (XLENGTH(s_off) == 0)
+			Rf_error(_("'%s' of length zero in '%s'"),
+			         "dims", CHAR(STRING_ELT(s_op, 0)));
+		int off = INTEGER_RO(s_off)[0];
+		if (off < 1 || off >= ndx)
+			Rf_error(_("'%s' is not in 1:(length(dim(%s))-1)"),
+			         "dims", "x");
+
+		SEXP dimz = PROTECT(Rf_allocVector(INTSXP, (byrow) ? off : ndx - off));
+		int *dz = INTEGER(dimz), ndz = LENGTH(dimz), k;
+
+		nz = 1;
+		for (k = 0; k < ndz; ++k)
+			nz *= (mp_limb_t) (dz[k] = dx[(byrow) ? k : off + k]);
+		mp_limb_t jt, nt = nx/nz;
+
+		SEXP dimnamesx = R_do_slot(s_x, R_flint_symbol_dimnames),
+			dimnamesz = R_NilValue;
+		if (dimnamesx != R_NilValue) {
+			PROTECT(dimnamesx);
+			PROTECT(dimnamesz = Rf_allocVector(VECSXP, ndz));
+			for (k = 0; k < ndz; ++k)
+				SET_VECTOR_ELT(dimnamesz, k, VECTOR_ELT(dimnamesx, (byrow) ? k : off + k));
+			SEXP namesdimnamesx = Rf_getAttrib(dimnamesx, R_NamesSymbol),
+				namesdimnamesz = R_NilValue;
+			if (namesdimnamesx != R_NilValue) {
+				PROTECT(namesdimnamesx);
+				PROTECT(namesdimnamesz = Rf_allocVector(STRSXP, ndz));
+				for (k = 0; k < ndz; ++k)
+					SET_STRING_ELT(namesdimnamesz, k, STRING_ELT(namesdimnamesx, (byrow) ? k : off + k));
+				Rf_setAttrib(dimnamesz, R_NamesSymbol, namesdimnamesz);
+				UNPROTECT(2);
+			}
+			UNPROTECT(2);
+		}
+		PROTECT(dimnamesz);
+
+		SEXP ans = PROTECT(newObject("mag"));
+		mag_ptr z = (nz) ? flint_calloc(nz, sizeof(mag_t)) : 0;
+		R_flint_set(ans, z, nz, (R_CFinalizer_t) &R_flint_mag_finalize);
+		jx = 0;
+		if (byrow) {
+			for (jz = 0; jz < nz; ++jz)
+				mag_zero(z + jz);
+			for (jt = 0; jt < nt; ++jt)
+				for (jz = 0; jz < nz; ++jz, ++jx)
+					WRAP(mag_add, lower, z + jz, z + jz, x + jx);
+			if (domean)
+			for (jz = 0; jz < nz; ++jz)
+				WRAP(mag_div_ui, lower, z + jz, z + jz, nt);
+		} else {
+			for (jz = 0; jz < nz; ++jz) {
+				mag_zero(z + jz);
+				for (jt = 0; jt < nt; ++jt, ++jx)
+					WRAP(mag_add, lower, z + jz, z + jz, x + jx);
+				if (domean)
+				WRAP(mag_div_ui, lower, z + jz, z + jz, nt);
+			}
+		}
+		if (ndz > 1)
+			setDDNN(ans, dimz, dimnamesz, R_NilValue);
+		else if (dimnamesz != R_NilValue)
+			setDDNN(ans, R_NilValue, R_NilValue, VECTOR_ELT(dimnamesz, 0));
+		UNPROTECT(4);
+		return ans;
+	}
 	default:
-		Rf_error(_("operation '%s' is not yet implemented for class '%s'"),
+		Rf_error(_("operation '%s' is not yet implemented for class \"%s\""),
 		         CHAR(STRING_ELT(s_op, 0)), "mag");
 		return R_NilValue;
 	}
-#undef COMMON
 }

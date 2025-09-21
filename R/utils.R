@@ -20,17 +20,19 @@ function (object) {
 flintClassCommon <-
 function (classes, strict = TRUE) {
     classes. <-
-    c("NULL", "raw", "logical", "integer", "double", "complex",
-      "character", "symbol", "pairlist", "list", "expression",
+    c("NULL",
+      "raw", "logical", "integer", "double", "complex", "character",
+      "pairlist", "symbol", "language", "list", "expression",
       "ulong", "slong", "fmpz", "fmpq", "mag", "arf", "acf",
       "arb", "acb")
     m <- match(classes., classes, 0L) > 0L
-    if (!strict && (w <- max(1L, which(m))) <= 10L)
-        return(classes.[if (w == 7L || w == 8L) 9L else w])
+    if (!strict && (w <- max(1L, which(m))) <= 12L)
+        return(classes.[if (w >= 8L && w < 11L) 11L else w])
     names(m) <- classes.
     if (m[["expression"]])
         "expression"
-    else if (m[["symbol"]] || m[["pairlist"]] || m[["list"]])
+    else if (m[["symbol"]] || m[["language"]] ||
+             m[["pairlist"]] || m[["list"]])
         "list"
     else if (m[["character"]])
         "character"
@@ -55,23 +57,17 @@ function (classes, strict = TRUE) {
     else "ulong"
 }
 
-flintIdentical <-
-function (object, reference)
-    .Call(R_flint_identical, object, reference)
-
 flintLength <-
 function (object, exact = TRUE)
     .Call(R_flint_length, object, as.logical(exact))
 
 flintLengthAny <-
 function (object, exact = TRUE) {
-    if (is.na(flintClass(object))) {
+    if (is.na(n <- flintLength(object, exact = exact))) {
         n <- length(object)
-        if (exact)
-            as(n, "ulong")
-        else n
+        if (exact) ulong(n) else n
     }
-    else flintLength(object, exact = exact)
+    else n
 }
 
 flintLongLongLimb <-

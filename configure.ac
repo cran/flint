@@ -1,6 +1,6 @@
 AC_PREREQ([2.72])
 AC_INIT([flint],
-        [0.0.5],
+        [0.1.0],
         [https://github.com/jaganmn/flint/issues],
         [],
         [https://github.com/jaganmn/flint])
@@ -289,10 +289,18 @@ int main()
                AC_MSG_ERROR([flint vector length can overflow size_t])
               ])
 
+AC_CHECK_MEMBER([fmpz_mat_struct.stride],
+                [
+                 AC_DEFINE([HAVE_FMPZ_MAT_STRUCT_STRIDE], [1],
+                           [Define to 1 if you have struct 'fmpz_mat_struct' with member 'stride'.])
+                ],
+                [],
+                [[#include <flint/fmpz_mat.h>]])
+
 AC_CHECK_FUNC([arb_init], [],
               [AC_MSG_ERROR([FLINT missing Arb sublibrary])])
 
-AC_CHECK_FUNCS([acf_abs acf_arg acf_conj acf_div_ui acf_is_finite acf_is_inf acf_is_nan acf_is_zero acf_nan acf_one acf_zero fmpq_clog_ui mag_div_ui_lower mag_expm1_lower mag_get_d_lower mag_log1p_lower], [], [])
+AC_CHECK_FUNCS([acb_mat_cho acb_mat_inv_cho_precomp acf_abs acf_arg acf_conj acf_div_ui acf_is_finite acf_is_inf acf_is_nan acf_is_zero acf_nan acf_one acf_zero fmpq_clog_ui mag_div_ui_lower mag_expm1_lower mag_get_d_lower mag_log1p_lower], [], [])
 
 dnl 'd_mul_2exp' availability must be tested specially as it is declared
 dnl static in flint/double_extras.h

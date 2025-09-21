@@ -1,749 +1,841 @@
+.subscript.missing <- as.name(".__WAS_MISSING__.")
+
 .subscript.class <-
-function (object, mode)
+function (object, mode) {
+    type. <- typeof(object)
     switch(mode,
            ## x
-           switch(type. <- typeof(object),
-                  "NULL" =, "raw" =, "logical" =, "integer" =, "double" =, "complex" =, "character" =, "pairlist" =, "list" =, "expression" =
+           switch(type.,
+                  "raw" =, "logical" =, "integer" =, "double" =, "complex" =, "character" =, "NULL" =, "pairlist" =, "language" =, "list" =, "expression" =
                                                                                               type.,
                   "S4" =
                       if (is.na(class. <- flintClass(object)))
                           stop(.error.notSubsettable(object))
                       else class.,
                   stop(.error.notSubsettable(object))),
-           ## i
-           switch(type. <- typeof(object),
+           ## i, j, ...
+           switch(type.,
                   "NULL" =, "logical" =, "integer" =, "double" =, "character" =
                       if (anyNA(object))
                           stop("NA subscripts not supported")
                       else type.,
+                  "symbol" =
+                      if (identical(object, .subscript.missing))
+                          "missing"
+                      else stop(.error.subscriptInvalidClass(object)),
                   "S4" =
                       switch(class. <- flintClass(object),
                              "ulong" =, "slong" =, "fmpz" =, "fmpq" =
                                  class.,
-                             stop(.error.invalidSubscriptClass(object))),
-                  stop(.error.invalidSubscriptType(object))),
+                             stop(.error.subscriptInvalidClass(object))),
+                  stop(.error.subscriptInvalidType(object))),
            ## value
-           switch(type. <- typeof(object),
-                  "NULL" =, "raw" =, "logical" =, "integer" =, "double" =, "complex" =, "character" =, "list" =, "expression" =
+           switch(type.,
+                  "raw" =, "logical" =, "integer" =, "double" =, "complex" =, "character" =, "NULL" =, "pairlist" =, "language" =, "list" =, "expression" =
                       type.,
                   "S4" =
                       if (is.na(class. <- flintClass(object)))
-                          stop(.error.invalidSubassignValueClass(object))
+                          stop(.error.subassignInvalidClass(object))
                       else class.,
-                  stop(.error.invalidSubassignValueType(object))),
+                  stop(.error.subassignInvalidType(object))),
            stop("should never happen ..."))
+}
 
-setMethod("[",
-          c(x = "ANY", i = "flint", j = "missing", drop = "missing"),
-          function (x, i, j, ..., drop = TRUE) {
-              cx <- .subscript.class(x, 1L)
-              if (...length())
-                  stop(.error.invalidArity())
-              ci <- .subscript.class(i, 2L)
-              ni <- flintLength(i)
-              nx <- length(x)
-              if (ni == 0L)
-              i <- integer(0L)
-              else {
-              a <- min(i)
-              b <- max(i)
-              i <-
-              if (a > -1L) {
-                  if (b - 1L >= nx)
-                      stop(.error.subscriptOutOfBounds(x, 0L, i))
-                  else if (a >= 1L)
-                      i
-                  else i[i >= 1L]
-              } else {
-                  if (b >= 1L)
-                      stop(.error.subscriptNegativePositive())
-                  else if (a + 1L <= -nx)
-                      stop(.error.subscriptOutOfBounds(x, 0L, i))
-                  else .Call(R_flint_ulong_complement, .ulong(x = -i), nx, TRUE)
-              }
-              i <-
-              if (is.double(nx))
-                  as.double(i)
-              else as.integer(i)
-              }
-              x[i]
-          })
+.subscript.list <-
+function (i, j, ..., ns, dx, call, exps) {
+    mi <- missing(i)
+    mj <- missing(j)
+    nd <- ...length()
+    if ((ns == 1L && !(nd == 0L && mj && is.null(call$j))) ||
+        (ns >= 2L && ns != nd + 2L))
+        stop(gettextf("actual arguments of '%s' call match formal argument '%s' but none match formal argument '%s'",
+                      "[",
+                      if (nd >= 1L) "..." else "j",
+                      if (ns >= 2L && mj && is.null(call$j)) "j" else "i"),
+             domain = NA)
+    if (ns == 0L)
+        list()
+    else if (ns == 1L)
+        list(if (mi) .subscript.missing else i)
+    else {
+        if (ns != length(dx))
+            stop(.error.subscriptInvalidArity())
+        ans <-
+        list(if (mi) .subscript.missing else i,
+             if (mj) .subscript.missing else j)
+        if (ns >= 3L) {
+            ans <- `[<-`(vector("list", ns), 1L:2L, ans)
+            for (k in 3L:ns) {
+                if (identical(exps[[k]], substitute()))
+                    ans[[k]] <- .subscript.missing
+                else if (!is.null(i <- ...elt(k - 2L)))
+                    ans[[k]] <- i
+            }
+        }
+        ans
+    }
+}
 
-setMethod("[",
-          c(x = "flint", i = "ANY", j = "missing", drop = "missing"),
-          function (x, i, j, ..., drop = TRUE) {
-              if (...length())
-                  stop(.error.invalidArity())
-              if (missing(i))
-                  return(x)
-              ci <- .subscript.class(i, 2L)
-              ni <- length(i)
-              nx <- flintLength(x)
-              if (ni == 0L)
-              i <- integer(0L)
-              else
-              i <-
-              switch(ci,
-                     "logical" =
-                         {
-                             nw <- length(w <- which(i))
-                             if (nw == 0L)
-                                 w
-                             else if (w[[nw]] > nx)
-                                 stop(.error.subscriptOutOfBounds(x, 0L, i))
-                             else {
-                                 ni <- .ulong(x = ni)
-                                 if (ni < nx) {
-                                     q <- nx %/% ni
-                                     r <- nx %% ni
-                                     w <- w. <- .ulong(x = w)
-                                     if (q >= 1L)
-                                         w <- w + rep(seq(from = .ulong(x = 0L), by = ni, length.out = q), each = flintLength(w))
-                                     if (r >= w[1L])
-                                         w <- c(w, flintLength(w) + w.[w. <= r])
-                                 }
-                                 w
-                             }
-                         },
-                     "integer" =,
-                     "double" =
-                         {
-                             a <- min(i)
-                             b <- max(i)
-                             if (a + 1L <= -nx || b - 1L >= nx)
-                                 stop(.error.subscriptOutOfBounds(x, 0L, i))
-                             else if (a >= 1L)
-                                 i
-                             else if (a > -1L)
-                                 i[i >= 1L]
-                             else if (b >= 1L)
-                                 stop(.error.subscriptNegativePositive())
-                             else if (nx <= .Machine[["integer.max"]])
-                                 seq_len(as.integer(nx))[as.integer(i)]
-                             else .Call(R_flint_ulong_complement, .ulong(x = -i), nx, TRUE)
-                         },
-                     "character" =
-                         {
-                             if (is.null(nms <- names(x)) ||
-                                 anyNA(m <- match(i, nms)))
-                                 stop(.error.subscriptOutOfBounds(x, 0L, i))
-                             m
-                         })
-              .Call(R_flint_subscript, x, i, TRUE)
-          })
+.subscript.1 <-
+function (x, i, j, ..., drop = TRUE) {
+    if (is.null(x))
+        return(NULL)
+    cx <- .subscript.class(x, 1L)
+    dx <- dim(x)
+    call <- sys.call(sys.nframe())
+    exps <- substitute(i(j, ...))
+    ns <- nargs() - 2L + (missing(drop) && is.null(call$drop))
+    s <- .subscript.list(i, j, ..., ns = ns, dx = dx,
+                         call = call, exps = exps)
+    if (ns == 0L)
+        x
+    else if (ns != length(dx)) {
+        i <- s[[1L]]
+        ci <- .subscript.class(i, 2L)
+        if (ci == "missing")
+            return(x)
+        nx <- flintLengthAny(x)
+        ni <- flintLengthAny(i)
+        if (ni == 0L)
+        i <- integer(0L)
+        else
+        i <-
+        switch(ci,
+               "logical" =
+               {
+                   nw <- length(w <- which(i))
+                   if (nw > 0L) {
+                       if (w[[nw]] > nx)
+                           stop(.error.subscriptOutOfBounds(x, 0L, i))
+                       else if (ni < nx) {
+                           q <- nx %/% ni
+                           r <- nx %% ni
+                           w <- w. <- ulong(w)
+                           if (q >= 1L)
+                               w <- w + rep(seq(from = ulong(0L), by = ni, length.out = q), each = flintLength(w))
+                           if (r >= w[1L])
+                               w <- c(w, flintLength(w) + w.[w. <= r])
+                       }
+                   }
+                   w
+               },
+               "integer" =, "double" =,
+               "ulong" =, "slong" =, "fmpz" =, "fmpq" =
+               {
+                   a <- min(i)
+                   b <- max(i)
+                   if (!is.null(dx) && !is.null(di <- dim(i)) &&
+                       length(di) == 2L && di[[2L]] == length(dx)) {
+                       if (a <= -1L || b - 1L >= .Machine[["integer.max"]] ||
+                           any((m <- t(`dim<-`(as.integer(i) - 1L, di))) >= dx))
+                           stop(.error.subscriptOutOfBounds(x, 0L, i))
+                       else {
+                           m. <- colSums(ulong(m) * cumprod(ulong(c(1L, dx[-length(dx)])))) + ulong(1L)
+                           if (a < 1L)
+                               m.[colSums(m < 1L) == 0L]
+                           else m.
+                       }
+                   } else {
+                       if (a > -1L) {
+                           if (b - 1L >= nx)
+                               stop(.error.subscriptOutOfBounds(x, 0L, i))
+                           else if (a >= 1L)
+                               i
+                           else i[i >= 1L]
+                       } else {
+                           if (b >= 1L)
+                               stop(.error.subscriptNegativePositive())
+                           else if (a + 1L <= -nx)
+                               stop(.error.subscriptOutOfBounds(x, 0L, i))
+                           else .Call(R_flint_ulong_complement, ulong(-i), nx, TRUE)
+                       }
+                   }
+               },
+               "character" =
+               {
+                   if (!is.null(dx) && !is.null(di <- dim(i)) &&
+                       length(di) == 2L && di[[2L]] == length(dx)) {
+                       if (is.null(nms <- dimnames(x)) ||
+                           {
+                               m <- array(0L, di[2L:1L])
+                               for (k in seq_along(dx))
+                                   m[k, ] <- match(i[, k], nms[[k]]) - 1L
+                               anyNA(m)
+                           })
+                           stop(.error.subscriptOutOfBounds(x, 0L, i))
+                       else colSums(ulong(m) * cumprod(ulong(c(1L, dx[-length(dx)])))) + ulong(1L)
+                   } else {
+                       if (is.null(nms <- names(x)) ||
+                           anyNA(m <- match(i, nms)))
+                           stop(.error.subscriptOutOfBounds(x, 0L, i))
+                       else m
+                   }
+               },
+               stop("should never happen ..."))
+        if (typeof(x) == "S4") {
+            if (typeof(i) == "S4" && flintClass(i) != "ulong")
+                i <- ulong(i)
+            .Call(R_flint_subscript, x, i, 1L)
+        } else {
+            if (typeof(i) == "S4")
+                i <- if (nx <= .Machine[["integer.max"]]) as.integer(i) else as.double(i)
+            x[i]
+        }
+    } # if (ns != length(dx))
+    else {
+        nms <- dimnames(x)
+        for (k in seq_len(ns)) {
+            i <- s[[k]]
+            ci <- .subscript.class(i, 2L)
+            if (ci == "missing")
+                next
+            nx <- dx[[k]]
+            ni <- length(i)
+            if (ni == 0L)
+            i <- integer(0L)
+            else {
+            i <-
+            switch(ci,
+                   "logical" =
+                   {
+                       nw <- length(w <- which(i))
+                       if (nw > 0L) {
+                           if (w[[nw]] > nx)
+                               stop(.error.subscriptOutOfBounds(x, k, i))
+                           else if (ni < nx) {
+                               q <- nx %/% ni
+                               r <- nx %% ni
+                               w. <- w
+                               if (q >= 1L)
+                                   w <- w + rep(seq(from = 0L, by = ni, length.out = q), each = length(w))
+                               if (r >= w[1L])
+                                   w <- c(w, length(w) + w.[w. <= r])
+                           }
+                       }
+                       w
+                   },
+                   "integer" =, "double" =,
+                   "ulong" =, "slong" =, "fmpz" =, "fmpq" =
+                   {
+                       a <- min(i)
+                       b <- max(i)
+                       if (a > -1L) {
+                           if (b - 1L >= nx)
+                               stop(.error.subscriptOutOfBounds(x, k, i))
+                           else if (a >= 1L)
+                               i
+                           else i[i >= 1L]
+                       } else {
+                           if (b >= 1L)
+                               stop(.error.subscriptNegativePositive())
+                           else if (a + 1L <= -nx)
+                               stop(.error.subscriptOutOfBounds(x, k, i))
+                           else .Call(R_flint_ulong_complement, ulong(-i), ulong(nx), TRUE)
+                       }
+                   },
+                   "character" =
+                   {
+                       if (is.null(nms[[k]]) ||
+                           anyNA(m <- match(i, nms[[k]])))
+                           stop(.error.subscriptOutOfBounds(x, k, i))
+                       else m
+                   },
+                   stop("should never happen ..."))
+            if (typeof(x) == "S4") {
+                if (typeof(i) == "S4" && flintClass(i) != "ulong")
+                    i <- ulong(i)
+            } else {
+                if (typeof(i) == "S4")
+                    i <- as.integer(i)
+            }
+            }
+            s[[k]] <- i
+        } # for (k in seq_len(ns))
+        if (typeof(x) == "S4") {
+            ans <- .Call(R_flint_subscript, x, s, 1L)
+            if (drop) drop(ans) else ans
+        } else
+            do.call(`[`, c(list(x), s, list(drop = if (drop) TRUE else FALSE)))
+    } # if (ns == length(dx))
+}
 
-setMethod("[",
-          c(x = "flint", i = "flint", j = "missing", drop = "missing"),
-          function (x, i, j, ..., drop = TRUE) {
-              if (...length())
-                  stop(.error.invalidArity())
-              ci <- .subscript.class(i, 2L)
-              ni <- flintLength(i)
-              nx <- flintLength(x)
-              if (ni == 0L)
-              i <- integer(0L)
-              else {
-              a <- min(i)
-              b <- max(i)
-              i <-
-              if (a > -1L) {
-                  if (b - 1L >= nx)
-                      stop(.error.subscriptOutOfBounds(x, 0L, i))
-                  else if (a >= 1L)
-                      i
-                  else i[i >= 1L]
-              } else {
-                  if (b >= 1L)
-                      stop(.error.subscriptNegativePositive())
-                  else if (a + 1L <= -nx)
-                      stop(.error.subscriptOutOfBounds(x, 0L, i))
-                  else .Call(R_flint_ulong_complement, .ulong(x = -i), nx, TRUE)
-              }
-              }
-              .Call(R_flint_subscript, x, i, TRUE)
-          })
+.subscript.2 <-
+function (x, i, j, ...) {
+    if (is.null(x))
+        return(NULL)
+    if (is.environment(x))
+        return(callNextMethod())
+    cx <- .subscript.class(x, 1L)
+    dx <- dim(x)
+    call <- sys.call(sys.nframe())
+    exps <- substitute(i(j, ...))
+    ns <- nargs() - 1L
+    s <- .subscript.list(i, j, ..., ns = ns, dx = dx,
+                         call = call, exps = exps)
+    if (ns == 0L)
+        stop(.error.subscriptMissing())
+    else if (ns != length(dx)) {
+        i <- s[[1L]]
+        ci <- .subscript.class(i, 2L)
+        if (ci == "missing")
+            stop(.error.subscriptMissing())
+        nx <- flintLengthAny(x)
+        ni <- flintLengthAny(i)
+        if (ni == 0L)
+            stop(.error.subscriptTooFew())
+        i <-
+        switch(ci,
+               "logical" =
+               {
+                   nw <- length(w <- which(i))
+                   if (nw != 1L)
+                       w
+                   else if (w > nx)
+                       stop(.error.subscriptOutOfBounds(x, 0L, i))
+                   else if (ni < nx && w <= nx - ni)
+                       stop(.error.subscriptTooMany())
+                   else w
+               },
+               "integer" =, "double" =,
+               "ulong" =, "slong" =, "fmpz" =, "fmpq" =
+               {
+                   a <- min(i)
+                   b <- max(i)
+                   if (a > -1L) {
+                       if (b - 1L >= nx)
+                           stop(.error.subscriptOutOfBounds(x, 0L, i))
+                       else if (a >= 1L)
+                           i
+                       else i[i >= 1L]
+                   } else {
+                       if (b >= 1L)
+                           stop(.error.subscriptNegativePositive())
+                       else if (a + 1L <= -nx)
+                           stop(.error.subscriptOutOfBounds(x, 0L, i))
+                       else .Call(R_flint_ulong_complement, ulong(-i), nx, TRUE)
+                   }
+               },
+               "character" =
+               {
+                   if (is.null(nms <- names(x)) ||
+                       anyNA(m <- match(i, nms)))
+                       stop(.error.subscriptOutOfBounds(x, 0L, i))
+                   else m
+               },
+               stop("should never happen ..."))
+        ni <- flintLengthAny(i)
+        if (ni != 1L)
+            stop(if (ni == 0L) .error.subscriptTooFew() else .error.subscriptTooMany())
+        if (typeof(x) == "S4") {
+            if (typeof(i) == "S4" && flintClass(i) != "ulong")
+                i <- ulong(i)
+            .Call(R_flint_subscript, x, i, 2L)
+        } else {
+            if (typeof(i) == "S4")
+                i <- if (nx <= .Machine[["integer.max"]]) as.integer(i) else as.double(i)
+            x[[i]]
+        }
+    } # if (ns != length(dx))
+    else {
+        nms <- dimnames(x)
+        anyLong <- FALSE
+        for (k in seq_len(ns)) {
+            i <- s[[k]]
+            ci <- .subscript.class(i, 2L)
+            if (ci == "missing")
+                stop(.error.subscriptMissing())
+            nx <- dx[[k]]
+            ni <- length(i)
+            if (ni == 0L)
+                stop(.error.subscriptTooFew())
+            i <-
+            switch(ci,
+                   "logical" =
+                   {
+                       nw <- length(w <- which(i))
+                       if (nw != 1L)
+                           w
+                       else if (w > nx)
+                           stop(.error.subscriptOutOfBounds(x, k, i))
+                       else if (ni < nx && w <= nx - ni)
+                           stop(.error.subscriptTooMany())
+                       else w
+                   },
+                   "integer" =, "double" =,
+                   "ulong" =, "slong" =, "fmpz" =, "fmpq" =
+                   {
+                       a <- min(i)
+                       b <- max(i)
+                       if (a > -1L) {
+                           if (b - 1L >= nx)
+                               stop(.error.subscriptOutOfBounds(x, k, i))
+                           else if (a >= 1L)
+                               i
+                           else i[i >= 1L]
+                       } else {
+                           if (b >= 1L)
+                               stop(.error.subscriptNegativePositive())
+                           else if (a + 1L <= -nx)
+                               stop(.error.subscriptOutOfBounds(x, k, i))
+                           else .Call(R_flint_ulong_complement, ulong(-i), ulong(nx), TRUE)
+                       }
+                   },
+                   "character" =
+                   {
+                       if (is.null(nms[[k]]) ||
+                           anyNA(m <- match(i, nms[[k]])))
+                           stop(.error.subscriptOutOfBounds(x, k, i))
+                       else m
+                   },
+                   stop("should never happen ..."))
+            ni <- length(i)
+            if (ni != 1L) {
+                if (ni == 0L)
+                    stop(.error.subscriptTooFew())
+                anyLong <- TRUE
+            }
+            if (typeof(x) == "S4") {
+                if (typeof(i) == "S4" && flintClass(i) != "ulong")
+                    i <- ulong(i)
+            } else {
+                if (typeof(i) == "S4")
+                    i <- as.integer(i)
+            }
+            s[[k]] <- i
+        } # for (k in seq_len(ns))
+        if (anyLong)
+            stop(.error.subscriptTooMany())
+        if (typeof(x) == "S4")
+            .Call(R_flint_subscript, x, s, 2L)
+        else do.call(`[[`, c(list(x), s))
+    } # if (ns == length(dx))
+}
 
-setMethod("[<-",
-          c(x = "ANY", i = "ANY", j = "missing", value = "flint"),
-          function (x, i, j, ..., value) {
-              cx <- .subscript.class(x, 1L)
-              if (...length())
-                  stop(.error.invalidArity())
-              cv <- flintClass(value)
-              common <- flintClassCommon(c(cx, cv))
-              x <- as(x, common)
-              value <- as(value, common)
-              if (missing(i))
-              x[ ] <- value
-              else
-              x[i] <- value
-              x
-          })
+.subassign.1 <-
+function (x, i, j, ..., value) {
+    if (missing(value))
+        stop(.error.subassignMissing())
+    if (is.null(x) && is.null(value))
+        return(NULL)
+    cx <- .subscript.class(x, 1L)
+    cv <- .subscript.class(value, 3L)
+    common <- flintClassCommon(c(cx, cv), strict = FALSE)
+    x <- asVector(x, common, strict = FALSE)
+    value <- as(value, common)
+    dx <- dim(x)
+    call <- sys.call(sys.nframe())
+    exps <- substitute(i(j, ...))
+    ns <- nargs() - 2L
+    s <- .subscript.list(i, j, ..., ns = ns, dx = dx,
+                         call = call, exps = exps)
+    if (ns == 0L) {
+        nx <- flintLengthAny(x)
+        if (nx > 0L && flintLengthAny(value) == 0L)
+            stop(.error.subassignTooFew())
+        if (typeof(x) == "S4")
+            .Call(R_flint_subassign, x, .subscript.missing, 1L, value)
+        else {
+            x[] <- value
+            x
+        }
+    }
+    else if (ns != length(dx)) {
+        i <- s[[1L]]
+        ci <- .subscript.class(i, 2L)
+        if (ci == "missing") {
+            nx <- flintLengthAny(x)
+            if (nx > 0L && flintLengthAny(value) == 0L)
+                stop(.error.subassignTooFew())
+            return(
+            if (typeof(x) == "S4")
+                .Call(R_flint_subassign, x, .subscript.missing, 1L, value)
+            else {
+                x[] <- value
+                x
+            }
+            )
+        }
+        nx <- flintLengthAny(x)
+        ni <- flintLengthAny(i)
+        if (ni == 0L)
+        i <- integer(0L)
+        else {
+        i <-
+        switch(ci,
+               "logical" =
+               {
+                   nw <- length(w <- which(i))
+                   if (nw > 0L) {
+                       if (w[[nw]] > nx)
+                           stop(.error.subscriptOutOfBounds(x, 0L, i))
+                       else if (ni < nx) {
+                           q <- nx %/% ni
+                           r <- nx %% ni
+                           w <- w. <- ulong(w)
+                           if (q >= 1L)
+                               w <- w + rep(seq(from = ulong(0L), by = ni, length.out = q), each = flintLength(w))
+                           if (r >= w[1L])
+                               w <- c(w, flintLength(w) + w.[w. <= r])
+                       }
+                   }
+                   w
+               },
+               "integer" =, "double" =,
+               "ulong" =, "slong" =, "fmpz" =, "fmpq" =
+               {
+                   a <- min(i)
+                   b <- max(i)
+                   if (!is.null(dx) && !is.null(di <- dim(i)) &&
+                       length(di) == 2L && di[[2L]] == length(dx)) {
+                       if (a <= -1L || b - 1L >= .Machine[["integer.max"]] ||
+                           any((m <- t(`dim<-`(as.integer(i) - 1L, di))) >= dx))
+                           stop(.error.subscriptOutOfBounds(x, 0L, i))
+                       else {
+                           m. <- colSums(ulong(m) * cumprod(ulong(c(1L, dx[-length(dx)])))) + ulong(1L)
+                           if (a < 1L)
+                               m.[colSums(m < 1L) == 0L]
+                           else m.
+                       }
+                   } else {
+                       if (a > -1L) {
+                           if (b - 1L >= nx)
+                               stop(.error.subscriptOutOfBounds(x, 0L, i))
+                           else if (a >= 1L)
+                               i
+                           else i[i >= 1L]
+                       } else {
+                           if (b >= 1L)
+                               stop(.error.subscriptNegativePositive())
+                           else if (a + 1L <= -nx)
+                               stop(.error.subscriptOutOfBounds(x, 0L, i))
+                           else .Call(R_flint_ulong_complement, ulong(-i), nx, TRUE)
+                       }
+                   }
+               },
+               "character" =
+               {
+                   if (!is.null(dx) && !is.null(di <- dim(i)) &&
+                       length(di) == 2L && di[[2L]] == length(dx)) {
+                       if (is.null(nms <- dimnames(x)) ||
+                           {
+                               m <- array(0L, di[2L:1L])
+                               for (k in seq_along(dx))
+                                   m[k, ] <- match(i[, k], nms[[k]]) - 1L
+                               anyNA(m)
+                           })
+                           stop(.error.subscriptOutOfBounds(x, 0L, i))
+                       else colSums(ulong(m) * cumprod(ulong(c(1L, dx[-length(dx)])))) + ulong(1L)
+                   } else {
+                       if (is.null(nms <- names(x)) ||
+                           anyNA(m <- match(i, nms)))
+                           stop(.error.subscriptOutOfBounds(x, 0L, i))
+                       else m
+                   }
+               },
+               stop("should never happen ..."))
+        ni <- flintLengthAny(i)
+        if (ni > 0L && flintLengthAny(value) == 0L)
+            stop(.error.subassignTooFew())
+        }
+        if (typeof(x) == "S4") {
+            if (typeof(i) == "S4" && flintClass(i) != "ulong")
+                i <- ulong(i)
+            .Call(R_flint_subassign, x, i, 1L, value)
+        } else {
+            if (typeof(i) == "S4")
+                i <- if (nx <= .Machine[["integer.max"]]) as.integer(i) else as.double(i)
+            x[i] <- value
+            x
+        }
+    } # if (ns != length(dx))
+    else {
+        nms <- dimnames(x)
+        anyEmpty <- FALSE
+        for (k in seq_len(ns)) {
+            i <- s[[k]]
+            ci <- .subscript.class(i, 2L)
+            if (ci == "missing")
+                next
+            nx <- dx[[k]]
+            ni <- length(i)
+            if (ni == 0L) {
+            i <- integer(0L)
+            anyEmpty <- TRUE
+            } else {
+            i <-
+            switch(ci,
+                   "logical" =
+                   {
+                       nw <- length(w <- which(i))
+                       if (nw > 0L) {
+                           if (w[[nw]] > nx)
+                               stop(.error.subscriptOutOfBounds(x, k, i))
+                           else if (ni < nx) {
+                               q <- nx %/% ni
+                               r <- nx %% ni
+                               w. <- w
+                               if (q >= 1L)
+                                   w <- w + rep(seq(from = 0L, by = ni, length.out = q), each = length(w))
+                               if (r >= w[1L])
+                                   w <- c(w, length(w) + w.[w. <= r])
+                           }
+                       }
+                       w
+                   },
+                   "integer" =, "double" =,
+                   "ulong" =, "slong" =, "fmpz" =, "fmpq" =
+                   {
+                       a <- min(i)
+                       b <- max(i)
+                       if (a > -1L) {
+                           if (b - 1L >= nx)
+                               stop(.error.subscriptOutOfBounds(x, k, i))
+                           else if (a >= 1L)
+                               i
+                           else i[i >= 1L]
+                       } else {
+                           if (b >= 1L)
+                               stop(.error.subscriptNegativePositive())
+                           else if (a + 1L <= -nx)
+                               stop(.error.subscriptOutOfBounds(x, k, i))
+                           else .Call(R_flint_ulong_complement, ulong(-i), ulong(nx), TRUE)
+                       }
+                   },
+                   "character" =
+                   {
+                       if (is.null(nms[[k]]) ||
+                           anyNA(m <- match(i, nms[[k]])))
+                           stop(.error.subscriptOutOfBounds(x, k, i))
+                       else m
+                   },
+                   stop("should never happen ..."))
+            ni <- length(i)
+            if (ni == 0L)
+                anyEmpty <- TRUE
+            if (typeof(x) == "S4") {
+                if (typeof(i) == "S4" && flintClass(i) != "ulong")
+                    i <- ulong(i)
+            } else {
+                if (typeof(i) == "S4")
+                    i <- as.integer(i)
+            }
+            }
+            s[[k]] <- i
+        } # for (k in seq_len(ns))
+        if (!anyEmpty && flintLengthAny(value) == 0L)
+            stop(.error.subassignTooFew())
+        if (typeof(x) == "S4")
+            .Call(R_flint_subassign, x, s, 1L, value)
+        else do.call(`[<-`, c(list(x), s, list(value)))
+    } # if (ns == length(dx))
+}
 
-setMethod("[<-",
-          c(x = "ANY", i = "flint", j = "missing", value = "ANY"),
-          function (x, i, j, ..., value) {
-              cx <- .subscript.class(x, 1L)
-              if (...length())
-                  stop(.error.invalidArity())
-              if (missing(value))
-                  stop(.error.missingSubassignValue())
-              ci <- .subscript.class(i, 2L)
-              ni <- flintLength(i)
-              nx <- length(x)
-              if (ni == 0L)
-              i <- integer(0L)
-              else {
-              a <- min(i)
-              b <- max(i)
-              i <-
-              if (a > -1L) {
-                  if (b - 1L >= nx)
-                      stop(.error.subscriptOutOfBounds(x, 0L, i))
-                  else if (a >= 1L)
-                      i
-                  else i[i >= 1L]
-              } else {
-                  if (b >= 1L)
-                      stop(.error.subscriptNegativePositive())
-                  else if (a + 1L <= -nx)
-                      stop(.error.subscriptOutOfBounds(x, 0L, i))
-                  else .Call(R_flint_ulong_complement, .ulong(x = -i), nx, TRUE)
-              }
-              i <-
-              if (is.double(nx))
-                  as.double(i)
-              else as.integer(i)
-              }
-              x[i] <- value
-              x
-          })
+.subassign.2 <-
+function (x, i, j, ..., value) {
+    if (missing(value))
+        stop(.error.subassignMissing())
+    if (is.null(x))
+        return(if (is.null(value)) NULL else { x <- list(); callGeneric() })
+    if (is.environment(x))
+        return(callNextMethod())
+    cx <- .subscript.class(x, 1L)
+    if (!is.recursive(x)) {
+    if (!is.null(value) && !is.atomic(value) && is.na(flintClass(value))) {
+        warning(gettextf("coercing left hand side of '%s' assignment to type \"%s\"",
+                         "[[<-", "list"),
+                domain = NA)
+        x <- asVector(x, "list", strict = FALSE)
+        return(callGeneric())
+    }
+    cv <- .subscript.class(value, 3L)
+    common <- flintClassCommon(c(cx, cv), strict = FALSE)
+    x <- asVector(x, common, strict = FALSE)
+    value <- as(value, common)
+    }
+    dx <- dim(x)
+    call <- sys.call(sys.nframe())
+    exps <- substitute(i(j, ...))
+    ns <- nargs() - 2L
+    s <- .subscript.list(i, j, ..., ns = ns, dx = dx,
+                         call = call, exps = exps)
+    if (ns == 0L)
+        stop(.error.subscriptMissing())
+    else if (ns != length(dx)) {
+        i <- s[[1L]]
+        ci <- .subscript.class(i, 2L)
+        if (ci == "missing")
+            stop(.error.subscriptMissing())
+        nx <- flintLengthAny(x)
+        ni <- flintLengthAny(i)
+        if (ni == 0L)
+            stop(.error.subscriptTooFew())
+        i <-
+        switch(ci,
+               "logical" =
+               {
+                   nw <- length(w <- which(i))
+                   if (nw != 1L)
+                       w
+                   else if (w > nx)
+                       stop(.error.subscriptOutOfBounds(x, 0L, i))
+                   else if (ni < nx && w <= nx - ni)
+                       stop(.error.subscriptTooMany())
+                   else w
+               },
+               "integer" =, "double" =,
+               "ulong" =, "slong" =, "fmpz" =, "fmpq" =
+               {
+                   a <- min(i)
+                   b <- max(i)
+                   if (a > -1L) {
+                       if (b - 1L >= nx)
+                           stop(.error.subscriptOutOfBounds(x, 0L, i))
+                       else if (a >= 1L)
+                           i
+                       else i[i >= 1L]
+                   } else {
+                       if (b >= 1L)
+                           stop(.error.subscriptNegativePositive())
+                       else if (a + 1L <= -nx)
+                           stop(.error.subscriptOutOfBounds(x, 0L, i))
+                       else .Call(R_flint_ulong_complement, ulong(-i), nx, TRUE)
+                   }
+               },
+               "character" =
+               {
+                   if (is.null(nms <- names(x)) ||
+                       anyNA(m <- match(i, nms)))
+                       stop(.error.subscriptOutOfBounds(x, 0L, i))
+                   else m
+               },
+               stop("should never happen ..."))
+        ni <- flintLengthAny(i)
+        if (ni != 1L)
+            stop(if (ni < 1L) .error.subscriptTooFew() else .error.subscriptTooMany())
+        if (!is.recursive(x)) {
+        nv <- flintLengthAny(value)
+        if (nv != 1L)
+            stop(if (ni < 1L) .error.subassignTooFew() else .error.subassignTooMany())
+        }
+        if (typeof(x) == "S4") {
+            if (typeof(i) == "S4" && flintClass(i) != "ulong")
+                i <- ulong(i)
+            .Call(R_flint_subassign, x, i, 2L, value)
+        } else {
+            if (typeof(i) == "S4")
+                i <- if (nx <= .Machine[["integer.max"]]) as.integer(i) else as.double(i)
+            x[[i]] <- value
+            x
+        }
+    } # if (ns != length(dx))
+    else {
+        nms <- dimnames(x)
+        anyLong <- FALSE
+        for (k in seq_len(ns)) {
+            i <- s[[k]]
+            ci <- .subscript.class(i, 2L)
+            if (ci == "missing")
+                stop(.error.subscriptMissing())
+            nx <- dx[[k]]
+            ni <- length(i)
+            if (ni == 0L)
+                stop(.error.subscriptTooFew())
+            i <-
+            switch(ci,
+                   "logical" =
+                   {
+                       nw <- length(w <- which(i))
+                       if (nw != 1L)
+                           w
+                       else if (w > nx)
+                           stop(.error.subscriptOutOfBounds(x, k, i))
+                       else if (ni < nx && w <= nx - ni)
+                           stop(.error.subscriptTooMany())
+                       else w
+                   },
+                   "integer" =, "double" =,
+                   "ulong" =, "slong" =, "fmpz" =, "fmpq" =
+                   {
+                       a <- min(i)
+                       b <- max(i)
+                       if (a > -1L) {
+                           if (b - 1L >= nx)
+                               stop(.error.subscriptOutOfBounds(x, k, i))
+                           else if (a >= 1L)
+                               i
+                           else i[i >= 1L]
+                       } else {
+                           if (b >= 1L)
+                               stop(.error.subscriptNegativePositive())
+                           else if (a + 1L <= -nx)
+                               stop(.error.subscriptOutOfBounds(x, k, i))
+                           else .Call(R_flint_ulong_complement, ulong(-i), ulong(nx), TRUE)
+                       }
+                   },
+                   "character" =
+                   {
+                       if (is.null(nms[[k]]) ||
+                           anyNA(m <- match(i, nms[[k]])))
+                           stop(.error.subscriptOutOfBounds(x, k, i))
+                       else m
+                   },
+                   stop("should never happen ..."))
+            ni <- length(i)
+            if (ni != 1L) {
+                if (ni == 0L)
+                    stop(.error.subscriptTooFew())
+                anyLong <- TRUE
+            }
+            if (typeof(x) == "S4") {
+                if (typeof(i) == "S4" && flintClass(i) != "ulong")
+                    i <- ulong(i)
+            } else {
+                if (typeof(i) == "S4")
+                    i <- as.integer(i)
+            }
+            s[[k]] <- i
+        } # for (k in seq_len(ns))
+        if (anyLong)
+            stop(.error.subscriptTooMany())
+        if (!is.recursive(x)) {
+        nv <- flintLengthAny(value)
+        if (nv != 1L)
+            stop(if (nv < 1L) .error.subassignTooFew() else .error.subassignTooMany())
+        }
+        if (typeof(x) == "S4")
+            .Call(R_flint_subassign, x, s, 2L, value)
+        else do.call(`[[<-`, c(list(x), s, list(value)))
+    } # if (ns == length(dx))
+}
 
-setMethod("[<-",
-          c(x = "ANY", i = "flint", j = "missing", value = "flint"),
-          function (x, i, j, ..., value) {
-              cx <- .subscript.class(x, 1L)
-              if (...length())
-                  stop(.error.invalidArity())
-              cv <- flintClass(value)
-              common <- flintClassCommon(c(cx, cv))
-              x <- as(x, common)
-              value <- as(value, common)
-              x[i] <- value
-              x
-          })
+setMethod("$",
+          c(x = "flint"),
+          function (x, name)
+              stop(gettextf("'%s' operator is invalid for atomic-like vectors",
+                            "$"),
+                   domain = NA))
 
-setMethod("[<-",
-          c(x = "flint", i = "ANY", j = "missing", value = "ANY"),
-          function (x, i, j, ..., value) {
-              cx <- flintClass(x)
-              if (...length())
-                  stop(.error.invalidArity())
-              if (missing(value))
-                  stop(.error.missingSubassignValue())
-              cv <- .subscript.class(value, 3L)
-              common <- flintClassCommon(c(cx, cv))
-              x <- as(x, common)
-              value <- as(value, common)
-              if (missing(i))
-              x[ ] <- value
-              else
-              x[i] <- value
-              x
-          })
+setMethod("$<-",
+          c(x = "flint"),
+          function (x, name, value)
+              stop(gettextf("'%s' operator is invalid for atomic-like vectors",
+                            "$<-"),
+                   domain = NA))
 
-setMethod("[<-",
-          c(x = "flint", i = "ANY", j = "missing", value = "flint"),
-          function (x, i, j, ..., value) {
-              cx <- flintClass(x)
-              if (...length())
-                  stop(.error.invalidArity())
-              if (missing(i)) {
-              ni <- nx <- flintLength(x)
-              i <- NULL
-              } else {
-              ci <- .subscript.class(i, 2L)
-              ni <- length(i)
-              nx <- flintLength(x)
-              if (ni == 0L)
-              i <- integer(0L)
-              else {
-              i <-
-              switch(ci,
-                     "logical" =
-                         {
-                             nw <- length(w <- which(i))
-                             if (nw == 0L)
-                                 w
-                             else if (w[[nw]] > nx)
-                                 stop(.error.subscriptOutOfBounds(x, 0L, i))
-                             else {
-                                 ni <- .ulong(x = ni)
-                                 if (ni < nx) {
-                                     q <- nx %/% ni
-                                     r <- nx %% ni
-                                     w <- w. <- .ulong(x = w)
-                                     if (q >= 1L)
-                                         w <- w + rep(seq(from = .ulong(x = 0L), by = ni, length.out = q), each = flintLength(w))
-                                     if (r >= w[1L])
-                                         w <- c(w, flintLength(w) + w.[w. <= r])
-                                 }
-                                 w
-                             }
-                         },
-                     "integer" =,
-                     "double" =
-                         {
-                             a <- min(i)
-                             b <- max(i)
-                             if (a > -1L) {
-                                 if (b - 1L >= nx)
-                                     stop(.error.subscriptOutOfBounds(x, 0L, i))
-                                 else if (a >= 1L)
-                                     i
-                                 else i[i >= 1L]
-                             } else {
-                                 if (b >= 1L)
-                                     stop(.error.subscriptNegativePositive())
-                                 else if (a + 1L <= -nx)
-                                     stop(.error.subscriptOutOfBounds(x, 0L, i))
-                                 else .Call(R_flint_ulong_complement, .ulong(x = -i), nx, TRUE)
-                             }
-                         },
-                     "character" =
-                         {
-                             if (is.null(nms <- names(x)) ||
-                                 anyNA(m <- match(i, nms)))
-                                 stop(.error.subscriptOutOfBounds(x, 0L, i))
-                             m
-                         })
-              ni <- flintLengthAny(i)
-              }
-              }
-              cv <- flintClass(value)
-              nv <- flintLength(value)
-              if (ni > 0L) {
-              if (nv == 0L)
-                  stop(.error.emptyReplace())
-              else if (nv > ni || ni %% nv > 0L)
-                  warning(.warning.remainderInReplace())
-              }
-              common <- flintClassCommon(c(cx, cv))
-              x <- as(x, common)
-              value <- as(value, common)
-              .Call(R_flint_subassign, x, i, value)
-          })
+. <- c("ANY", "flint")
+.G <- as.matrix(expand.grid(x = ., i = ., j = .))
+for (.I in 2L:nrow(.G)) {
+    setMethod( "["  , .G[.I, ], .subscript.1)
+    setMethod("[["  , .G[.I, ], .subscript.2)
+}
+.G <- as.matrix(expand.grid(x = ., i = ., j = ., value = .))
+for (.I in 2L:nrow(.G)) {
+    setMethod( "[<-", .G[.I, ], .subassign.1)
+    setMethod("[[<-", .G[.I, ], .subassign.2)
+}
+rm(., .G, .I)
 
-setMethod("[<-",
-          c(x = "flint", i = "flint", j = "missing", value = "ANY"),
-          function (x, i, j, ..., value) {
-              cx <- flintClass(x)
-              if (...length())
-                  stop(.error.invalidArity())
-              if (missing(value))
-                  stop(.error.missingSubassignValue())
-              cv <- .subscript.class(value, 3L)
-              common <- flintClassCommon(c(cx, cv))
-              x <- as(x, common)
-              value <- as(value, common)
-              x[i] <- value
-              x
-          })
-
-setMethod("[<-",
-          c(x = "flint", i = "flint", j = "missing", value = "flint"),
-          function (x, i, j, ..., value) {
-              cx <- flintClass(x)
-              if (...length())
-                  stop(.error.invalidArity())
-              ci <- .subscript.class(i, 2L)
-              ni <- flintLength(i)
-              nx <- flintLength(x)
-              if (ni == 0L)
-              i <- integer(0L)
-              else {
-              a <- min(i)
-              b <- max(i)
-              i <-
-              if (a > -1L) {
-                  if (b - 1L >= nx)
-                      stop(.error.subscriptOutOfBounds(x, 0L, i))
-                  else if (a >= 1L)
-                      i
-                  else i[i >= 1L]
-              } else {
-                  if (b >= 1L)
-                      stop(.error.subscriptNegativePositive())
-                  else if (a + 1L <= -nx)
-                      stop(.error.subscriptOutOfBounds(x, 0L, i))
-                  else .Call(R_flint_ulong_complement, .ulong(x = -i), nx, TRUE)
-              }
-              ni <- flintLength(i)
-              }
-              cv <- flintClass(value)
-              nv <- flintLength(value)
-              if (ni > 0L) {
-              if (nv == 0L)
-                  stop(.error.emptyReplace())
-              else if (nv > ni || ni %% nv > 0L)
-                  warning(.warning.remainderInReplace())
-              }
-              common <- flintClassCommon(c(cx, cv))
-              x <- as(x, common)
-              value <- as(value, common)
-              .Call(R_flint_subassign, x, i, value)
-          })
-
-setMethod("[[",
-          c(x = "ANY", i = "flint", j = "missing"),
-          function (x, i, j, ...) {
-              cx <- .subscript.class(x, 1L)
-              if (...length())
-                  stop(.error.invalidArity())
-              ci <- .subscript.class(i, 2L)
-              ni <- flintLength(i)
-              nx <- length(x)
-              if (ni == 0L)
-              i <- integer(0L)
-              else {
-              a <- min(i)
-              b <- max(i)
-              i <-
-              if (a > -1L) {
-                  if (b - 1L >= nx)
-                      stop(.error.subscriptOutOfBounds(x, 0L, i))
-                  else if (a >= 1L)
-                      i
-                  else i[i >= 1L]
-              } else {
-                  if (b >= 1L)
-                      stop(.error.subscriptNegativePositive())
-                  else if (a + 1L <= -nx)
-                      stop(.error.subscriptOutOfBounds(x, 0L, i))
-                  else .Call(R_flint_ulong_complement, .ulong(x = -i), nx, TRUE)
-              }
-              i <-
-              if (is.double(nx))
-                  as.double(i)
-              else as.integer(i)
-              }
-              x[[i]]
-          })
-
-setMethod("[[",
-          c(x = "flint", i = "ANY", j = "missing"),
-          function (x, i, j, ...) {
-              if (...length())
-                  stop(.error.invalidArity())
-              if (missing(i))
-                  stop(.error.missingSubscript())
-              ci <- .subscript.class(i, 2L)
-              ni <- length(i)
-              nx <- flintLength(x)
-              if (ni > 0L) {
-              i <-
-              switch(ci,
-                     "logical" =
-                         {
-                             nw <- length(w <- which(i))
-                             if (nw != 1L)
-                                 w
-                             else if (w > nx)
-                                 stop(.error.subscriptOutOfBounds(x, 0L, i))
-                             else if (ni < nx && w <= nx - ni)
-                                 stop(.error.subscriptTooMany())
-                             else w
-                         },
-                     "integer" =,
-                     "double" =
-                         {
-                             a <- min(i)
-                             b <- max(i)
-                             if (a > -1L) {
-                                 if (b - 1L >= nx)
-                                     stop(.error.subscriptOutOfBounds(x, 0L, i))
-                                 else if (a >= 1L)
-                                     i
-                                 else i[i >= 1L]
-                             } else {
-                                 if (b >= 1L)
-                                     stop(.error.subscriptNegativePositive())
-                                 else if (a + 1L <= -nx)
-                                     stop(.error.subscriptOutOfBounds(x, 0L, i))
-                                 else .Call(R_flint_ulong_complement, .ulong(x = -i), nx, TRUE)
-                             }
-                         },
-                     "character" =
-                         {
-                             if (is.null(nms <- names(x)) ||
-                                 anyNA(m <- match(i, nms)))
-                                 stop(.error.subscriptOutOfBounds(x, 0L, i))
-                             m
-                         })
-              ni <- flintLengthAny(i)
-              }
-              if (ni < 1L)
-                  stop(.error.subscriptTooFew())
-              else if (ni > 1L)
-                  stop(.error.subscriptTooMany())
-              .Call(R_flint_subscript, x, i, FALSE)
-          })
-
-setMethod("[[",
-          c(x = "flint", i = "flint", j = "missing"),
-          function (x, i, j, ...) {
-              if (...length())
-                  stop(.error.invalidArity())
-              ci <- .subscript.class(i, 2L)
-              ni <- flintLength(i)
-              nx <- flintLength(x)
-              if (ni > 0L) {
-              a <- min(i)
-              b <- max(i)
-              i <-
-              if (a > -1L) {
-                  if (b - 1L >= nx)
-                      stop(.error.subscriptOutOfBounds(x, 0L, i))
-                  else if (a >= 1L)
-                      i
-                  else i[i >= 1L]
-              } else {
-                  if (b >= 1L)
-                      stop(.error.subscriptNegativePositive())
-                  else if (a + 1L <= -nx)
-                      stop(.error.subscriptOutOfBounds(x, 0L, i))
-                  else .Call(R_flint_ulong_complement, .ulong(x = -i), nx, TRUE)
-              }
-              ni <- flintLength(i)
-              }
-              if (ni < 1L)
-                  stop(.error.subscriptTooFew())
-              else if (ni > 1L)
-                  stop(.error.subscriptTooMany())
-              .Call(R_flint_subscript, x, i, FALSE)
-          })
-
-setMethod("[[<-",
-          c(x = "ANY", i = "ANY", j = "missing", value = "flint"),
-          function (x, i, j, ..., value) {
-              cx <- .subscript.class(x, 1L)
-              if (...length())
-                  stop(.error.invalidArity())
-              cv <- flintClass(value)
-              common <- flintClassCommon(c(cx, cv))
-              x <- as(x, common)
-              value <- as(value, common)
-              if (missing(i))
-              x[[ ]] <- value
-              else
-              x[[i]] <- value
-              x
-          })
-
-setMethod("[[<-",
-          c(x = "ANY", i = "flint", j = "missing", value = "ANY"),
-          function (x, i, j, ..., value) {
-              cx <- .subscript.class(x, 1L)
-              if (...length())
-                  stop(.error.invalidArity())
-              if (missing(value))
-                  stop(.error.missingSubassignValue())
-              ci <- .subscript.class(i, 2L)
-              ni <- flintLength(i)
-              nx <- length(x)
-              if (ni == 0L)
-              i <- integer(0L)
-              else {
-              a <- min(i)
-              b <- max(i)
-              i <-
-              if (a > -1L) {
-                  if (b - 1L >= nx)
-                      stop(.error.subscriptOutOfBounds(x, 0L, i))
-                  else if (a >= 1L)
-                      i
-                  else i[i >= 1L]
-              } else {
-                  if (b >= 1L)
-                      stop(.error.subscriptNegativePositive())
-                  else if (a + 1L <= -nx)
-                      stop(.error.subscriptOutOfBounds(x, 0L, i))
-                  else .Call(R_flint_ulong_complement, .ulong(x = -i), nx, TRUE)
-              }
-              i <-
-              if (is.double(nx))
-                  as.double(i)
-              else as.integer(i)
-              }
-              x[[i]] <- value
-              x
-          })
-
-setMethod("[[<-",
-          c(x = "ANY", i = "flint", j = "missing", value = "flint"),
-          function (x, i, j, ..., value) {
-              cx <- .subscript.class(x, 1L)
-              if (...length())
-                  stop(.error.invalidArity())
-              cv <- flintClass(value)
-              common <- flintClassCommon(c(cx, cv))
-              x <- as(x, common)
-              value <- as(value, common)
-              x[[i]] <- value
-              x
-          })
-
-setMethod("[[<-",
-          c(x = "flint", i = "ANY", j = "missing", value = "ANY"),
-          function (x, i, j, ..., value) {
-              cx <- flintClass(x)
-              if (...length())
-                  stop(.error.invalidArity())
-              if (missing(value))
-                  stop(.error.missingSubassignValue())
-              cv <- .subscript.class(value, 3L)
-              common <- flintClassCommon(c(cx, cv))
-              x <- as(x, common)
-              value <- as(value, common)
-              if (missing(i))
-              x[[ ]] <- value
-              else
-              x[[i]] <- value
-              x
-          })
-
-setMethod("[[<-",
-          c(x = "flint", i = "ANY", j = "missing", value = "flint"),
-          function (x, i, j, ..., value) {
-              cx <- flintClass(x)
-              if (...length())
-                  stop(.error.invalidArity())
-              if (missing(i))
-                  stop(.error.missingSubscript())
-              ci <- .subscript.class(i, 2L)
-              ni <- length(i)
-              nx <- flintLength(x)
-              if (ni > 0L) {
-              i <-
-              switch(ci,
-                     "logical" =
-                         {
-                             nw <- length(w <- which(i))
-                             if (nw != 1L)
-                                 w
-                             else if (w > nx)
-                                 stop(.error.subscriptOutOfBounds(x, 0L, i))
-                             else if (ni < nx && w <= nx - ni)
-                                 stop(.error.subscriptTooMany())
-                             else w
-                         },
-                     "integer" =,
-                     "double" =
-                         {
-                             a <- min(i)
-                             b <- max(i)
-                             if (a > -1L) {
-                                 if (b - 1L >= nx)
-                                     stop(.error.subscriptOutOfBounds(x, 0L, i))
-                                 else if (a >= 1L)
-                                     i
-                                 else i[i >= 1L]
-                             } else {
-                                 if (b >= 1L)
-                                     stop(.error.subscriptNegativePositive())
-                                 else if (a + 1L <= -nx)
-                                     stop(.error.subscriptOutOfBounds(x, 0L, i))
-                                 else .Call(R_flint_ulong_complement, .ulong(x = -i), nx, TRUE)
-                             }
-                         },
-                     "character" =
-                         {
-                             if (is.null(nms <- names(x)) ||
-                                 anyNA(m <- match(i, nms)))
-                                 stop(.error.subscriptOutOfBounds(x, 0L, i))
-                             m
-                         })
-              ni <- flintLengthAny(i)
-              }
-              if (ni < 1L)
-                  stop(.error.subscriptTooFew())
-              else if (ni > 1L)
-                  stop(.error.subscriptTooMany())
-              if (missing(value))
-                  stop(.error.missingSubassignValue())
-              cv <- flintClass(value)
-              nv <- flintLength(value)
-              if (nv == 0L)
-                  stop(.error.emptyReplace())
-              else if (nv > 1L)
-                  warning(.warning.remainderInReplace())
-              common <- flintClassCommon(c(cx, cv))
-              x <- as(x, common)
-              value <- as(value, common)
-              .Call(R_flint_subassign, x, i, value)
-          })
-
-setMethod("[[<-",
-          c(x = "flint", i = "flint", j = "missing", value = "ANY"),
-          function (x, i, j, ..., value) {
-              cx <- flintClass(x)
-              if (...length())
-                  stop(.error.invalidArity())
-              if (missing(value))
-                  stop(.error.missingSubassignValue())
-              cv <- .subscript.class(value, 3L)
-              common <- flintClassCommon(c(cx, cv))
-              x <- as(x, common)
-              value <- as(value, common)
-              x[[i]] <- value
-              x
-          })
-
-setMethod("[[<-",
-          c(x = "flint", i = "flint", j = "missing", value = "flint"),
-          function (x, i, j, ..., value) {
-              cx <- flintClass(x)
-              if (...length())
-                  stop(.error.invalidArity())
-              if (missing(value))
-                  stop(.error.missingSubassignValue())
-              ci <- .subscript.class(i, 2L)
-              ni <- flintLength(i)
-              nx <- flintLength(x)
-              if (ni > 0L) {
-              a <- min(i)
-              b <- max(i)
-              i <-
-              if (a > -1L) {
-                  if (b - 1L >= nx)
-                      stop(.error.subscriptOutOfBounds(x, 0L, i))
-                  else if (a >= 1L)
-                      i
-                  else i[i >= 1L]
-              } else {
-                  if (b >= 1L)
-                      stop(.error.subscriptNegativePositive())
-                  else if (a + 1L <= -nx)
-                      stop(.error.subscriptOutOfBounds(x, 0L, i))
-                  else .Call(R_flint_ulong_complement, .ulong(x = -i), nx, TRUE)
-              }
-              ni <- flintLength(i)
-              }
-              if (ni < 1L)
-                  stop(.error.subscriptTooFew())
-              else if (ni > 1L)
-                  stop(.error.subscriptTooMany())
-              cv <- flintClass(value)
-              nv <- flintLength(value)
-              if (nv == 0L)
-                  stop(.error.emptyReplace())
-              else if (nv > 1L)
-                  warning(.warning.remainderInReplace())
-              common <- flintClassCommon(c(cx, cv))
-              x <- as(x, common)
-              value <- as(value, common)
-              .Call(R_flint_subassign, x, i, value)
-          })
+rm(.subscript.1, .subscript.2, .subassign.1, .subassign.2)
 
 .all.equal <-
 function (target, current,
@@ -770,8 +862,17 @@ function (target, current,
             else if (length(nc))
                 msg <- c(msg, "names for current but not for target")
         }
-        at <- attributes(target)
-        ac <- attributes(current)
+        attributes4 <-
+        function(x) {
+            a <- attributes(x)
+            if (!is.null(a) && isS4(x))
+                for (s in .slotNames(x))
+                    if (identical(a[[s]], quote(`\001NULL\001`)))
+                        a[[s]] <- NULL
+            a
+        }
+        at <- attributes4(target)
+        ac <- attributes4(current)
         at[["class"]] <- ac[["class"]] <- NULL
         at[["names"]] <- ac[["names"]] <- NULL
         if (!is.na(flintClass(target)))
@@ -927,41 +1028,116 @@ setMethod("as.complex",
 
 setMethod("as.matrix",
           c(x = "flint"),
-          function (x, ...) as.matrix(as.vector(x), ...))
+          function (x, ...) {
+              d <- x@dim
+              dn <- x@dimnames
+              n <- x@names
+              if (length(d) != 2L) {
+                  m <- length(x)
+                  if (!is.integer(m))
+                      stop(gettextf("%s[[%d]] would exceed maximum %d",
+                                    "dim", 1L, .Machine[["integer.max"]]),
+                           domain = NA)
+                  d <- c(m, 1L)
+                  dn <- if (!is.null(n)) list(n, NULL)
+                  n <- NULL
+              }
+              `names<-`(`dimnames<-`(`dim<-`(as.vector(x), d), dn), n)
+          })
 
 setMethod("as.array",
           c(x = "flint"),
-          function (x, ...) as.array (as.vector(x), ...))
+          function (x, ...) {
+              d <- x@dim
+              dn <- x@dimnames
+              n <- x@names
+              if (length(d) == 0L) {
+                  m <- length(x)
+                  if (!is.integer(m))
+                      stop(gettextf("%s[[%d]] would exceed maximum %d",
+                                    "dim", 1L, .Machine[["integer.max"]]),
+                           domain = NA)
+                  d <- m
+                  dn <- if (!is.null(n)) list(n)
+                  n <- NULL
+              }
+              `names<-`(`dimnames<-`(`dim<-`(as.vector(x), d), dn), n)
+          })
 
 setMethod("as.data.frame",
           c(x = "flint"),
-          as.data.frame.vector)
+          function (x, row.names = NULL, optional = FALSE,
+                    make.names = TRUE, ..., nm = deparse(substitute(x))) {
+              force(nm)
+              d <- x@dim
+              dn <- x@dimnames
+              n <- x@names
+              x@dim <- x@dimnames <- x@names <- NULL
+              if (is.null(d)) {
+                  ans <- list(x)
+                  r <- length(x)
+                  if (!is.integer(r))
+                      stop(gettext("number of rows would exceed maximum %d",
+                                   .Machine[["integer.max"]]),
+                           domain = NA)
+                  if (is.null(row.names))
+                      row.names <- n
+                  names <- if (!optional) nm[[1L]]
+              } else {
+                  ans <- vector("list", prod(d[-1L]))
+                  for (i in seq_along(ans))
+                      ans[[i]] <- x[seq.int(to = i * r, length.out = r)]
+                  r <- d[[1L]]
+                  if (is.null(row.names))
+                      row.names <- dn[[1L]]
+                  names <-
+                  if (!is.null(dn) && length(d) > 1L) {
+                      if (length(d) == 2L) {
+                          if (length(w <- which(!nzchar(dn[[2L]]))))
+                              dn[[2L]][w] <- paste0("V", w)
+                          dn[[2L]]
+                      } else {
+                          for (i in 2L:length(d))
+                              if (is.null(dn[[i]]))
+                                  dn[[i]] <- seq_len(d[[i]])
+                          interaction(expand.grid(dn[-1L]))
+                      }
+                  }
+                  else if (!optional) paste0("V", seq_along(ans))
+              }
+              oldClass(ans) <- "data.frame"
+              names(ans) <- names
+              if (is.null(row.names))
+                  attr(ans, "row.names") <- .set_row_names(r)
+              else .rowNamesDF(ans, make.names) <- row.names
+              ans
+          })
 
 setMethod("as.Date",
           c(x = "flint"),
           function (x, ...)
-              as.Date   (`names<-`(as.vector(x), names(x)),          ...))
+              as.Date   (asVector(x, "vector", FALSE),          ...))
 
 setMethod("as.POSIXct",
           c(x = "flint"),
           function (x, tz = "", ...)
-              as.POSIXct(`names<-`(as.vector(x), names(x)), tz = tz, ...))
+              as.POSIXct(asVector(x, "vector", FALSE), tz = tz, ...))
 
 setMethod("as.POSIXlt",
           c(x = "flint"),
           function (x, tz = "", ...)
-              as.POSIXlt(`names<-`(as.vector(x), names(x)), tz = tz, ...))
+              as.POSIXlt(asVector(x, "vector", FALSE), tz = tz, ...))
 
-.c.class <-
+.bind.class <-
 function (x)
     switch(type. <- typeof(x),
-           "NULL" =, "raw" =, "logical" =, "integer" =, "double" =, "complex" =, "character" =, "symbol" =, "pairlist" =, "list" =, "expression" =
+           "raw" =, "logical" =, "integer" =, "double" =, "complex" =, "character" =, "NULL" =, "pairlist" =, "symbol" =, "language" =, "list" =, "expression" =
                                                                                        type.,
            "S4" =
                if (is.na(class. <- flintClass(x)))
-                   stop(.error.invalidArgumentClass(x))
+                   stop(.error.argumentInvalidClass(x))
                else class.,
-           stop(.error.invalidArgumentType(x)))
+           stop(.error.argumentInvalidType(x)))
 
 c.flint <-
 function (..., recursive = FALSE, use.names = TRUE) {
@@ -974,20 +1150,56 @@ function (..., recursive = FALSE, use.names = TRUE) {
     }
     else
         args <- list(...)
-    classes <- vapply(args, .c.class, "")
+    classes <- vapply(args, .bind.class, "")
     common <- flintClassCommon(classes, strict = FALSE)
     if (any(common == c("NULL", "raw", "logical", "integer", "double", "complex")))
         return(c(NULL, ..., recursive = FALSE, use.names = use.names))
     args <- lapply(args, as, common)
     if (any(common == c("character", "list", "expression")))
         unlist(args, recursive = FALSE, use.names = use.names)
-    else .Call(R_flint_bind, args, as.logical(use.names))
+    else {
+        exps <- substitute(list(...))
+        .Call(R_flint_bind, 2L, as.logical(use.names), args, exps)
+    }
 }
 
 setMethod("c",
           c(x = "flint"),
           function (x, ...)
               c.flint(x, ...))
+
+cbind.flint <-
+function (..., deparse.level = 1) {
+    if (nargs() == 0L)
+        return(NULL)
+    args <- list(...)
+    classes <- vapply(args, .bind.class, "")
+    common <- flintClassCommon(classes, strict = FALSE)
+    if (any(common == c("NULL", "raw", "logical", "integer", "double", "complex")))
+        return(cbind(NULL, ..., deparse.level = deparse.level))
+    args <- lapply(args, asVector, common, strict = FALSE)
+    if (any(common == c("character", "list", "expression")))
+        do.call(cbind, c(args, list(deparse.level = deparse.level)))
+    else {
+        exps <- substitute(list(...))
+        .Call(R_flint_bind, 1L, as.integer(deparse.level), args, exps)
+    }
+}
+
+setMethod("cbind2",
+          c(x =   "ANY", y = "flint"),
+          function (x, y, ...)
+              cbind.flint(x, y, deparse.level = 0L))
+
+setMethod("cbind2",
+          c(x = "flint", y =   "ANY"),
+          function (x, y, ...)
+              cbind.flint(x, y, deparse.level = 0L))
+
+setMethod("cbind2",
+          c(x = "flint", y = "flint"),
+          function (x, y, ...)
+              cbind.flint(x, y, deparse.level = 0L))
 
 setMethod("cut",
           c(x = "flint"),
@@ -1001,17 +1213,179 @@ setMethod("cut",
 setAs("ANY", "flint",
       function (from)
           switch(type. <- typeof(from),
-                 "raw" = .ulong(x = from),
-                 "logical" =, "integer" = .slong(x = from),
-                 "double" = .arf(x = from),
-                 "complex" = .acf(x = from),
+                 "raw" = ulong(from),
+                 "logical" =, "integer" = slong(from),
+                 "double" = arf(from),
+                 "complex" = acf(from),
                  "character" =
-                 stop(gettextf("coercion from '%s' to '%s' is not yet implemented; consider coercing to a nonvirtual subclass of '%s'",
+                 stop(gettextf("coercion from \"%s\" to \"%s\" is not yet implemented; consider coercing to a nonvirtual subclass of \"%s\"",
                                type., "flint", "flint"),
                       domain = NA),
-                 stop(gettextf("coercion from '%s' to '%s' is not yet implemented",
+                 stop(gettextf("coercion from \"%s\" to \"%s\" is not yet implemented",
                                type., "flint"),
                       domain = NA)))
+
+setMethod("diag",
+          c(x = "flint"),
+          function (x = 1, nrow, ncol, names = TRUE) {
+              if (is.null(d <- x@dim)) {
+                  if (missing(nrow)) nrow <- length(x)
+                  if (missing(ncol)) ncol <- nrow
+                  .Call(R_flint_diag, x, as.integer(nrow), as.integer(ncol))
+              } else {
+                  if (length(d) != 2L)
+                      stop(gettextf("'%s' is an array but not a matrix",
+                                    "x"),
+                           domain = NA)
+                  if (!(missing(nrow) && missing(ncol)))
+                      stop(gettextf("attempt to set '%s' when '%s' is a matrix",
+                                    if (missing(nrow)) "ncol" else "nrow", "x"),
+                           domain = NA)
+                  ans <- .Call(R_flint_diag, x, NULL, NULL)
+                  if (names &&
+                      !(is.null(dn <- x@dimnames) ||
+                        is.null(rn <- dn[[1L]]) ||
+                        is.null(cn <- dn[[2L]])) &&
+                      {
+                          h <- seq_len(min(d))
+                          identical(an <- rn[h], cn[h])
+                      })
+                      ans@names <- an
+                  ans
+              }
+          })
+
+setMethod("diag<-",
+          c(x = "flint"),
+          function (x, value) {
+              if (length(d <- x@dim) != 2L)
+                  stop(gettextf("'%s' is not a matrix", "x"),
+                       domain = NA)
+              i <- ulong(1L) + ulong(d[1L]) * .Call(R_flint_ulong_seq, ulong(0L), ulong(min(d)), FALSE)
+              x[i] <- value
+              x
+          })
+
+setMethod("dim",
+          c(x = "flint"),
+          function (x)
+              x@dim)
+
+setMethod("dim<-",
+          c(x = "flint", value = "NULL"),
+          function (x, value) {
+              if (!is.null(x@dim)) {
+                  x@dim <- NULL
+                  if (!is.null(x@dimnames))
+                      x@dimnames <- NULL
+              }
+              x
+          })
+
+setMethod("dim<-",
+          c(x = "flint", value = "numeric"),
+          function (x, value) {
+              if (length(value) == 0L)
+                  stop(gettextf("length of '%s' is %d",
+                                "value", 0L),
+                       domain = NA)
+              if (is.double(length(value)))
+                  stop(gettextf("length of '%s' exceeds maximum %d",
+                                "value", .Machine[["integer.max"]]),
+                       domain = NA)
+              if (anyNA(value))
+                  stop(gettextf("%s[[%d]] is NA",
+                                "value", which.max(is.na(value))),
+                       domain = NA)
+              if (min(value) < 0L)
+                  stop(gettextf("%s[[%d]] is negative",
+                                "value", which.max(value < 0)),
+                       domain = NA)
+              if (is.double(value) &&
+                  max(value) - 1 > .Machine[["integer.max"]])
+                  stop(gettextf("%s[[%d]] exceeds maximum %d",
+                                "value", which.max(value - 1 > .Machine[["integer.max"]]), .Machine[["integer.max"]]),
+                       domain = NA)
+              if ((nv <- prod(ulong(value))) != (nx <- flintLength(x)))
+                  stop(gettextf("product of '%s' [%s] is not equal to length of '%s' [%s]",
+                                "value", format(nv), "x", format(nx)),
+                       domain = NA)
+              x@dim <- as.integer(value)
+              if (!is.null(x@dimnames))
+                  x@dimnames <- NULL
+              x
+          })
+
+setMethod("dimnames",
+          c(x = "flint"),
+          function (x)
+              x@dimnames)
+
+setMethod("dimnames<-",
+          c(x = "flint", value = "NULL"),
+          function (x, value) {
+              if (!is.null(x@dimnames))
+                  x@dimnames <- NULL
+              x
+          })
+
+setMethod("dimnames<-",
+          c(x = "flint", value = "list"),
+          function (x, value) {
+              dim <- x@dim
+              if (length(dim) == 0L)
+                  stop(gettextf("attempt to assign '%s' to non-array",
+                                "dimnames"),
+                       domain = NA)
+              if (length(value) != length(dim))
+                  stop(gettextf("length of '%s' [%.0f] is not equal to length of '%s' [%.0f]",
+                                "value", length(value), "dim", length(dim)),
+                       domain = NA)
+              for (i in seq_along(dim))
+              switch(typeof(s <- value[[i]]),
+                     "NULL" = NULL,
+                     "raw" =, "logical" =, "integer" =, "double" =, "complex" =, "character" =, "list" =, "expression" =
+                         value[i] <-
+                         if (length(s) == 0L)
+                             list(NULL)
+                         else if (length(s) == dim[[i]])
+                             list(if (is.factor(s)) as.character.factor(s) else as.character.default(s))
+                         else
+                             stop(gettextf("length of %s[[%d]] [%.0f] is not equal to %s[[%d]] [%.0f]",
+                                           "value", i, length(s), "dim", i, dim[[i]]),
+                                  domain = NA),
+                     stop(gettextf("invalid type \"%s\" for %s[[%d]]",
+                                   typeof(s), "value", i),
+                          domain = NA))
+              a <- attributes(value)
+              if (!is.null(a) && (length(a) > 1L || names(a) != "names")) {
+                  tmp <- names(value)
+                  attributes(value) <- NULL
+                  names(value) <- tmp
+              }
+              x@dimnames <- value
+              x
+          })
+
+setMethod("drop",
+          c(x = "flint"),
+          function (x) {
+              d <- x@dim
+              if (!all(k <- d != 1L)) {
+                  dn <- x@dimnames
+                  if (length(w <- which(k)) > 1L) {
+                      x@dim <- d[w]
+                      x@dimnames <- dn[w]
+                  } else {
+                      x@dim <- x@dimnames <- NULL
+                      x@names <-
+                      if (length(w) == 1L ||
+                          length(w <- which(!vapply(dn, is.null, FALSE))) == 1L)
+                          dn[[w]]
+                  }
+              }
+              x
+          })
 
 setMethod("duplicated",
           c(x = "flint"),
@@ -1055,11 +1429,62 @@ setMethod("findInterval",
                     as.logical(all.inside))
           })
 
+setMethod("identical",
+          c(x = "flint", y = "flint"),
+          function (x, y,
+                    num.eq = TRUE, single.NA = TRUE,
+                    attrib.as.set = TRUE, ignore.bytecode = TRUE,
+                    ignore.environment = FALSE, ignore.srcref = TRUE,
+                    extptr.as.ref = FALSE) {
+              x. <- x
+              y. <- y
+              if (!extptr.as.ref)
+                  x@.xData <- y@.xData <- new("externalptr")
+              base::identical(x, y,
+                              num.eq, single.NA,
+                              attrib.as.set, ignore.bytecode,
+                              ignore.environment, ignore.srcref,
+                              extptr.as.ref) &&
+                  (extptr.as.ref || .Call(R_flint_identical, x., y.))
+          })
+
+setMethod("is.array",
+          c(x = "flint"),
+          function (x)
+              length(x@dim) >= 1L)
+
+setMethod("is.matrix",
+          c(x = "flint"),
+          function (x)
+              length(x@dim) == 2L)
+
 setMethod("is.na<-",
           c(x = "flint"),
           function (x, value) {
               x[value] <- switch(flintClass(x), "ulong" =, "slong" =, "fmpz" =, "fmpq" = NA_integer_, "mag" =, "arf" =, "arb" = NA_real_, "acf" =, "acb" = NA_complex_)
               x
+          })
+
+setMethod("isSymmetric",
+          c(object = "flint"),
+          function (object,
+                    tol = 100 * .Machine$double.eps, tol1 = 8 * tol,
+                    trans = "C", ...) {
+              if (length(d <- object@dim) != 2L)
+                  stop(gettextf("'%s' is not a matrix", "object"),
+                       domain = NA)
+              if ((n <- d[1L]) != d[2L])
+                  return(FALSE)
+              op <- if (trans == "C" && any(flintClass(object) == c("acf", "acb")))
+                        Conj
+                    else identity
+              if (n > 1L && length(tol1))
+              for (i in c(1L, 2L, if (n > 3L) n - 1L, if (n > 2L) n))
+                  if (is.character(all.equal(object[, i], op(t(object[i, ])),
+                                             tolerance = tol1, ...)))
+                      return(FALSE)
+              !is.character(all.equal(object, op(t(object)),
+                                      tolerance = tol, ...))
           })
 
 setMethod("length",
@@ -1070,7 +1495,7 @@ setMethod("length",
 setMethod("length<-",
           c(x = "flint"),
           function (x, value)
-              .Call(R_flint_realloc, x, as(value, "ulong")))
+              .Call(R_flint_length_assign, x, as(value, "ulong")))
 
 .match <-
 function (x, table, nomatch = NA_integer_, incomparables = NULL) {
@@ -1106,13 +1531,13 @@ setMethod("mtfrm",
 setMethod("names",
           c(x = "flint"),
           function (x)
-              if (length(value <- x@names)) value)
+              x@names)
 
 setMethod("names<-",
           c(x = "flint", value = "NULL"),
           function (x, value) {
-              if (length(x@names))
-                  x@names <- character(0L)
+              if (!is.null(x@names))
+                  x@names <- NULL
               x
           })
 
@@ -1121,60 +1546,148 @@ setMethod("names<-",
           function (x, value) {
               nx <- length(x)
               if (nx > 0x1p+52) {
-                  warning(gettextf("length of '%s' exceeds maximum character vector length; ignoring non-NULL '%s'",
-                                   "x", "value"),
+                  warning(gettextf("length of '%s' [%s] exceeds maximum length of character vector [%.0f]; '%s' assignment is no-op",
+                                   "x", format(flintLength(x)), 0x1p+52, "names"),
                           domain = NA)
                   return(x)
               }
-              nv <- length(value <- as.character(value))
+              nv <- length(value)
               x@names <-
               if (nv == nx)
-                  value
+                  as.character(value)
               else {
                   if (nv > nx)
-                  stop(gettextf("length of '%s' exceeds length of '%s'",
-                                "value", "x"),
+                  stop(gettextf("length of '%s' [%.0f] exceeds length of '%s' [%.0f]",
+                                "value", nv, "x", nx),
                        domain = NA)
-                  c(value, character(nx - nv))
+                  c(as.character(value), character(nx - nv))
               }
               x
           })
 
+setMethod("norm",
+          c(x = "flint"),
+          function (x, type, ...) {
+              if (length(x@dim) != 2L)
+                  stop(gettextf("'%s' is not a matrix", "x"),
+                       domain = NA)
+              type <- if (missing(type)) "O" else substr(type, 1L, 1L)
+              max0 <-
+              function (x) {
+                  if (length(x))
+                      max(x)
+                  else flint(flintClass(x), length = 1L)
+              }
+              switch(EXPR = type,
+                     "1" =,
+                     "O" =, "o" = max0(colSums(abs(x))),
+                     "I" =, "i" = max0(rowSums(abs(x))),
+                     "F" =, "f" =,
+                     "E" =, "e" = sqrt(sum(x * x)),
+                     "M" =, "m" = max0(abs(x)),
+                     "2" =
+                     stop(gettextf("norm type \"%s\" is not yet implemented", type),
+                          domain = NA),
+                     stop(gettextf("norm type \"%s\" is invalid", type),
+                          domain = NA))
+          })
+
 setMethod("print",
           c(x = "flint"),
-          function (x, digits = NULL, max = NULL, Rdiff = NULL, ...) {
+          function (x, digits = NULL, digits.mag = NULL, max = NULL,
+                    Rdiff = NULL, ...) {
               s <- flintTriple(x)
               if (is.null(Rdiff))
                   Rdiff <- getOption("flint.Rdiff", FALSE)
               Rdiff <- as.logical(Rdiff)
               if (Rdiff)
-              cat(gettextf("class \"%s\", length %s, address <pointer: %s>",
-                           s[1L], s[2L], s[3L]),
-                  "\n", sep = "")
-              else
-              cat(gettextf("class \"%s\", length %s, address %s",
-                           s[1L], s[2L], s[3L]),
-                  "\n", sep = "")
-              len <- length(x)
-              if (len > 0L) {
-                  if (is.null(max))
-                      max <- getOption("max.print", 99999L)
-                  max <- as.integer(max)
-                  if (len <= max)
-                      print.default(format(x, digits = digits), quote = FALSE, max = max, ...)
-                  else {
-                      print.default(format(x[seq_len(max)], digits = digits), quote = FALSE, max = max, ...)
-                      cat(gettextf(" [ reached '%s' / getOption(\"%s\") -- omitted %.0f entries ]",
-                                   "max", "max.print", len - max),
-                          "\n", sep = "")
-                  }
+                  s[3L] <- paste0("<pointer: ", s[3L], ">")
+              msg <-
+              if (is.null(d <- x@dim))
+              gettextf("class \"%s\", length %s, address %s",
+                       s[1L], s[2L], s[3L])
+              else {
+              nd <- length(d)
+              s[2L] <- paste(if (nd <= 4L) d else c(d[1L:4L], "..."),
+                             collapse = ",")
+              gettextf("class \"%s\", dim (%s), address %s",
+                       s[1L], s[2L], s[3L])
+              }
+              cat(msg, "\n", sep = "")
+              n <- flintLength(x)
+              if (n > 0L) {
+              if (is.null(max))
+                  max <- getOption("max.print")
+              max <- as.integer(max)
+              if (max < 0L)
+                  max <- 0L
+              msg <-
+              if (n <= max) {
+                  y <- x
+                  NULL
+              }
+              else if (is.null(d) || nd == 1L) {
+                  ## Omit entries
+                  y <- x[seq_len(max)]
+                  gettextf(" [ reached '%s', omitted trailing %.0f entries ]",
+                           "max",
+                           as.double(n - ulong(max)))
+              }
+              else if (max < d[2L]) {
+                  ## Omit pages then rows then columns
+                  args <- rep(list(x, 1L, seq_len(max), 1L, drop = FALSE),
+                              c(1L, 1L, 1L, nd - 2L, 1L))
+                  y <- do.call(`[`, args)
+                  if (nd == 2L)
+                  gettextf(" [ reached '%s', omitted trailing %d rows, %d columns ]",
+                           "max",
+                           d[1L] - 1L, d[2L] - max)
+                  else
+                  gettextf(" [ reached '%s', omitted trailing (%s) indices ]",
+                           "max",
+                           paste(d - rep(c(1L, max, 1L), c(1L, 1L, nd - 2L)),
+                                 collapse = ","))
+              }
+              else if (max %/% d[2L] < d[1L]) {
+                  ## Omit pages then rows
+                  k <- max %/% d[2L]
+                  args <- rep(list(x, seq_len(k), substitute(), 1L, drop = FALSE),
+                              c(1L, 1L, 1L, nd - 2L, 1L))
+                  y <- do.call(`[`, args)
+                  if (nd == 2L)
+                  gettextf(" [ reached '%s', omitted trailing %d rows ]",
+                           "max",
+                           d[1L] - k)
+                  else
+                  gettextf(" [ reached '%s', omitted trailing (%s) indices ]",
+                           "max",
+                           paste(d - rep(c(k, d[2L], 1L), c(1L, 1L, nd - 2L)),
+                                 collapse = ","))
+              }
+              else {
+                  ## Omit pages
+                  p <- cumprod(ulong(d))
+                  w <- which(p > ulong(max)); w. <- w[1L]
+                  k <- as.integer(max %/% p[[w. - 1L]])
+                  args <- rep(list(x, substitute(), seq_len(k), 1L, drop = FALSE),
+                              c(1L, w. - 1L, 1L, nd - w., 1L))
+                  y <- do.call(`[`, args)
+                  gettextf(" [ reached '%s', omitted trailing (%s) indices ]",
+                           "max",
+                           paste(d - rep(c(0L, k, 1L), c(w. - 1L, 1L, nd - w.)),
+                                 collapse = ","))
+              }
+              print.default(format(y, digits = digits, digits.mag = digits.mag),
+                            quote = FALSE, right = TRUE, max = max, ...)
+              if (!is.null(msg))
+                  cat(msg, "\n", sep = "")
               }
               invisible(x)
           })
 
 setMethod("quantile",
           c(x = "flint"),
-          function (x, probs = .fmpq(num = 0L:4L, den = 4L), type = 7L,
+          function (x, probs = fmpq(num = 0L:4L, den = 4L), type = 7L,
                     ...) {
               class. <-
               switch(flintClass(x),
@@ -1220,11 +1733,11 @@ setMethod("quantile",
                   if (type <= 3L) {
                       nppm <- n * probs
                       if (type == 3L)
-                          nppm <- nppm - .fmpq(num = 1L, den = 2L)
+                          nppm <- nppm - fmpq(num = 1L, den = 2L)
                       j <- floor(nppm)
                       h <- switch(type,
                                   nppm > j,
-                                  .fmpq(num = (nppm > j) + 1L, den = 2L),
+                                  fmpq(num = (nppm > j) + 1L, den = 2L),
                                   nppm != j | j%%2L == 1L)
                   } else {
                       switch(type - 3L,
@@ -1232,11 +1745,11 @@ setMethod("quantile",
                                  a <- 0L
                                  b <- 1L
                              },
-                             a <- b <- .fmpq(num = 1L, den = 2L),
+                             a <- b <- fmpq(num = 1L, den = 2L),
                              a <- b <- 0L,
                              a <- b <- 1L,
-                             a <- b <- .fmpq(num = 1L, den = 3L),
-                             a <- b <- .fmpq(num = 3L, den = 8L))
+                             a <- b <- fmpq(num = 1L, den = 3L),
+                             a <- b <- fmpq(num = 3L, den = 8L))
                       nppm <- a + (n + 1L - a - b) * probs
                       j <- floor(nppm)
                       h <- nppm - j
@@ -1254,6 +1767,39 @@ setMethod("quantile",
               }
               qs
           })
+
+rbind.flint <-
+function (..., deparse.level = 1) {
+    if (nargs() == 0L)
+        return(NULL)
+    args <- list(...)
+    classes <- vapply(args, .bind.class, "")
+    common <- flintClassCommon(classes, strict = FALSE)
+    if (any(common == c("NULL", "raw", "logical", "integer", "double", "complex")))
+        return(cbind(NULL, ..., deparse.level = deparse.level))
+    args <- lapply(args, asVector, common, strict = FALSE)
+    if (any(common == c("character", "list", "expression")))
+        do.call(rbind, c(args, list(deparse.level = deparse.level)))
+    else {
+        exps <- substitute(list(...))
+        .Call(R_flint_bind, 0L, as.integer(deparse.level), args, exps)
+    }
+}
+
+setMethod("rbind2",
+          c(x =   "ANY", y = "flint"),
+          function (x, y, ...)
+              rbind.flint(x, y, deparse.level = 0L))
+
+setMethod("rbind2",
+          c(x = "flint", y =   "ANY"),
+          function (x, y, ...)
+              rbind.flint(x, y, deparse.level = 0L))
+
+setMethod("rbind2",
+          c(x = "flint", y = "flint"),
+          function (x, y, ...)
+              rbind.flint(x, y, deparse.level = 0L))
 
 setMethod("rep",
           c(x = "flint"),
@@ -1340,15 +1886,15 @@ setMethod("seq",
                .seq <-
                function (from, length.out, reverse = FALSE)
                    .Call(R_flint_ulong_seq, from, length.out, reverse)
-               zero <- .ulong(x = 0L)
-               unit <- .ulong(x = 1L)
+               zero <- ulong(0L)
+               unit <- ulong(1L)
                switch(nargs() - ...length(),
                {
                    if (missing(length.out))
                        stop(gettextf("usage seq(%s=) is not yet implemented",
                                      if (missing(from)) if (missing(to)) "by" else "to" else "from"),
                             domain = NA)
-                   .seq(.ulong(x = 1L), length.out)
+                   .seq(ulong(1L), length.out)
                },
                {
                    if (missing(length.out) != missing(by))
@@ -1395,7 +1941,7 @@ setMethod("seq",
 
 setMethod("sequence",
           c(nvec = "flint"),
-          function (nvec, from = .ulong(x = 1L), by = .ulong(x = 1L), ...) {
+          function (nvec, from = ulong(1L), by = ulong(1L), ...) {
               n. <- c(flintLengthAny(nvec),
                       flintLengthAny(from),
                       flintLengthAny(by))
@@ -1430,13 +1976,18 @@ setMethod("summary",
                   object <- object[!(isna <- is.na(object))]
               qq <- quantile(object, type = quantile.type)
               qq <- c(qq[1L:3L], mean(object), qq[4L:5L])
-              names(qq) <- c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max.")
+              qq@names <- c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max.")
               if (anyna) c(qq, "NaN" = sum(isna)) else qq
           })
+
+setMethod("t",
+          c(x = "flint"),
+          function (x)
+              .Call(R_flint_transpose, x, FALSE))
 
 setMethod("unique",
           c(x = "flint"),
           function (x, incomparables = FALSE, ...) {
-              names(x) <- NULL
+              x@names <- NULL
               x[!duplicated(x, incomparables = incomparables, ...)]
           })

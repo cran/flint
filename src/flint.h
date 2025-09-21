@@ -21,12 +21,16 @@
 #include <flint/long_extras.h>
 #include <flint/double_extras.h>
 #include <flint/fmpz.h>
+#include <flint/fmpz_mat.h>
 #include <flint/fmpq.h>
+#include <flint/fmpq_mat.h>
 #include <flint/mag.h>
 #include <flint/arf.h>
 #include <flint/acf.h>
 #include <flint/arb.h>
+#include <flint/arb_mat.h>
 #include <flint/acb.h>
+#include <flint/acb_mat.h>
 #include "revertnoreturn.h"
 #include <Rconfig.h> /* R_INLINE, ENABLE_NLS */
 #include <R_ext/Arith.h> /* R_FINITE, ISNAN, ... */
@@ -150,7 +154,10 @@ mpfr_set_emax(__emax_old); \
 
 
 extern
-SEXP R_flint_symbol_dot_xdata,
+SEXP R_flint_symbol_missing,
+	R_flint_symbol_dot_xdata,
+	R_flint_symbol_dim,
+	R_flint_symbol_dimnames,
 	R_flint_symbol_names,
 	R_flint_symbol_num,
 	R_flint_symbol_den,
@@ -180,10 +187,14 @@ extern
 const char *R_flint_classes[11];
 
 extern
-const char *R_flint_ops2[16];
+const char *R_flint_ops2[22];
 
 extern
-const char *R_flint_ops1[60];
+const char *R_flint_ops1[70];
+
+#if R_VERSION < R_Version(4, 5, 0)
+void CLEAR_ATTRIB(SEXP x);
+#endif
 
 char *R_alloc_snprintf(size_t, const char *, ...);
 
@@ -192,7 +203,19 @@ SEXP newObject(const char *);
 SEXPTYPE checkType(SEXP, SEXPTYPE *, const char *);
 const char *checkClass(SEXP, const char **, const char *);
 
-mp_limb_t asLength(SEXP, const char *);
+SEXP copyVector(SEXP);
+
+mp_limb_t validLength(SEXP, SEXP, mp_limb_t);
+SEXP validDim(SEXP);
+SEXP validDimNames(SEXP, SEXP);
+SEXP validNames(SEXP, mp_limb_t);
+
+void setDDNN(SEXP, SEXP, SEXP, SEXP);
+void setDDNN2(SEXP, SEXP, SEXP, mp_limb_t, mp_limb_t, mp_limb_t, int);
+void setDDNN1(SEXP, SEXP);
+
+int checkConformable(SEXP, SEXP, mp_limb_t, mp_limb_t, int, int *);
+
 mpfr_prec_t asPrec(SEXP, const char *);
 mpfr_rnd_t asRnd(SEXP, const char *);
 int asBase(SEXP, const char *);
@@ -203,6 +226,7 @@ void  ucopy(unsigned int *, const mp_limb_t *);
 void uucopy(mp_limb_t *, const unsigned int *);
 
 size_t strmatch(const char *, const char **);
+int matrixop(size_t);
 
 void *R_flint_get_pointer(SEXP);
 mp_limb_t R_flint_get_length(SEXP);

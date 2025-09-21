@@ -13,11 +13,14 @@ void R_flint_arb_finalize(SEXP x)
 	return;
 }
 
-SEXP R_flint_arb_initialize(SEXP object, SEXP s_length, SEXP s_x,
+SEXP R_flint_arb_initialize(SEXP object, SEXP s_x, SEXP s_length,
+                            SEXP s_dim, SEXP s_dimnames, SEXP s_names,
                             SEXP s_mid, SEXP s_rad)
 {
-	mp_limb_t j, nm = 1, nr = 1, nx = 0, ny = 0;
+	mp_limb_t jy, nx = 0, ny = 0, nm = 1, nr = 1;
 	R_flint_class_t class = R_FLINT_CLASS_INVALID;
+	PROTECT(s_dim = validDim(s_dim));
+	PROTECT(s_dimnames = validDimNames(s_dimnames, s_dim));
 	if (s_mid != R_NilValue || s_rad != R_NilValue) {
 		if (s_x != R_NilValue)
 			Rf_error(_("'%s' usage and '%s', '%s' usage are mutually exclusive"),
@@ -26,14 +29,10 @@ SEXP R_flint_arb_initialize(SEXP object, SEXP s_length, SEXP s_x,
 			nm = R_flint_get_length(s_mid);
 		if (s_rad != R_NilValue)
 			nr = R_flint_get_length(s_rad);
-		if (s_length == R_NilValue)
-			ny = RECYCLE2(nm, nr);
-		else {
-			ny = asLength(s_length, __func__);
-			if (ny > 0 && (nm == 0 || nr == 0))
-				Rf_error(_("'%s' of length zero cannot be recycled to nonzero length"),
-				         (nm == 0) ? "mid" : "rad");
-		}
+		ny = validLength(s_length, s_dim, RECYCLE2(nm, nr));
+		if (ny > 0 && (nm == 0 || nr == 0))
+			Rf_error(_("'%s' of length zero cannot be recycled to nonzero length"),
+			         (nm == 0) ? "mid" : "rad");
 	}
 	else if (s_x != R_NilValue) {
 		checkType(s_x, R_flint_sexptypes, __func__);
@@ -45,19 +44,14 @@ SEXP R_flint_arb_initialize(SEXP object, SEXP s_length, SEXP s_x,
 				Rf_error(_("foreign external pointer"));
 			nx = R_flint_get_length(s_x);
 		}
-		if (s_length == R_NilValue)
-			ny = nx;
-		else {
-			ny = asLength(s_length, __func__);
-			if (ny > 0 && nx == 0)
-				Rf_error(_("'%s' of length zero cannot be recycled to nonzero length"),
-				         "x");
-		}
+		ny = validLength(s_length, s_dim, nx);
+		if (ny > 0 && nx == 0)
+			Rf_error(_("'%s' of length zero cannot be recycled to nonzero length"),
+			         "x");
 	}
-	else if (s_length != R_NilValue)
-		ny = asLength(s_length, __func__);
 	else
-		ny = 0;
+		ny = validLength(s_length, s_dim, nx);
+	PROTECT(s_names = validNames(s_names, ny));
 	arb_ptr y = (ny) ? flint_calloc(ny, sizeof(arb_t)) : 0;
 	R_flint_set(object, y, ny, (R_CFinalizer_t) &R_flint_arb_finalize);
 	if (s_mid != R_NilValue || s_rad != R_NilValue) {
@@ -65,70 +59,70 @@ SEXP R_flint_arb_initialize(SEXP object, SEXP s_length, SEXP s_x,
 			arf_srcptr xm = R_flint_get_pointer(s_mid);
 			if (s_rad != R_NilValue) {
 				mag_srcptr xr = R_flint_get_pointer(s_rad);
-				for (j = 0; j < ny; ++j) {
-					arf_set(arb_midref(y + j), xm + j % nm);
-					mag_set(arb_radref(y + j), xr + j % nr);
+				for (jy = 0; jy < ny; ++jy) {
+					arf_set(arb_midref(y + jy), xm + jy % nm);
+					mag_set(arb_radref(y + jy), xr + jy % nr);
 				}
 			} else {
-				for (j = 0; j < ny; ++j) {
-					arf_set(arb_midref(y + j), xm + j % nm);
-					mag_zero(arb_radref(y + j));
+				for (jy = 0; jy < ny; ++jy) {
+					arf_set(arb_midref(y + jy), xm + jy % nm);
+					mag_zero(arb_radref(y + jy));
 				}
 			}
 		} else {
 			if (s_rad != R_NilValue) {
 				mag_srcptr xr = R_flint_get_pointer(s_rad);
-				for (j = 0; j < ny; ++j) {
-					arf_zero(arb_midref(y + j));
-					mag_set(arb_radref(y + j), xr + j % nr);
+				for (jy = 0; jy < ny; ++jy) {
+					arf_zero(arb_midref(y + jy));
+					mag_set(arb_radref(y + jy), xr + jy % nr);
 				}
 			}
 		}
 	} else {
 		switch (TYPEOF(s_x)) {
 		case NILSXP:
-			for (j = 0; j < ny; ++j)
-				arb_zero(y + j);
+			for (jy = 0; jy < ny; ++jy)
+				arb_zero(y + jy);
 			break;
 		case RAWSXP:
 		{
 			const Rbyte *x = RAW_RO(s_x);
-			for (j = 0; j < ny; ++j)
-				arb_set_ui(y + j, x[j % nx]);
+			for (jy = 0; jy < ny; ++jy)
+				arb_set_ui(y + jy, x[jy % nx]);
 			break;
 		}
 		case LGLSXP:
 		{
 			const int *x = LOGICAL_RO(s_x);
-			for (j = 0; j < ny; ++j)
-				if (x[j % nx] == NA_LOGICAL)
-				arb_set_d(y + j, R_NaN);
+			for (jy = 0; jy < ny; ++jy)
+				if (x[jy % nx] == NA_LOGICAL)
+				arb_set_d(y + jy, R_NaN);
 				else
-				arb_set_si(y + j, x[j % nx]);
+				arb_set_si(y + jy, x[jy % nx]);
 			break;
 		}
 		case INTSXP:
 		{
 			const int *x = INTEGER_RO(s_x);
-			for (j = 0; j < ny; ++j)
-				if (x[j % nx] == NA_INTEGER)
-				arb_set_d(y + j, R_NaN);
+			for (jy = 0; jy < ny; ++jy)
+				if (x[jy % nx] == NA_INTEGER)
+				arb_set_d(y + jy, R_NaN);
 				else
-				arb_set_si(y + j, x[j % nx]);
+				arb_set_si(y + jy, x[jy % nx]);
 			break;
 		}
 		case REALSXP:
 		{
 			const double *x = REAL_RO(s_x);
-			for (j = 0; j < ny; ++j)
-				arb_set_d(y + j, x[j % nx]);
+			for (jy = 0; jy < ny; ++jy)
+				arb_set_d(y + jy, x[jy % nx]);
 			break;
 		}
 		case CPLXSXP:
 		{
 			const Rcomplex *x = COMPLEX_RO(s_x);
-			for (j = 0; j < ny; ++j)
-				arb_set_d(y + j, x[j % nx].r);
+			for (jy = 0; jy < ny; ++jy)
+				arb_set_d(y + jy, x[jy % nx].r);
 			break;
 		}
 		case STRSXP:
@@ -142,31 +136,36 @@ SEXP R_flint_arb_initialize(SEXP object, SEXP s_length, SEXP s_x,
 			arf_init(tmp);
 			const char *s;
 			char *t;
-			for (j = 0; j < ny; ++j) {
-				s = CHAR(STRING_ELT(s_x, (R_xlen_t) (j % nx)));
+			int negate;
+			for (jy = 0; jy < ny; ++jy) {
+				s = CHAR(STRING_ELT(s_x, (R_xlen_t) (jy % nx)));
+				while (isspace(*s))
+					s++;
+				negate = *s == '-';
+				if (*s == '+' || negate)
+					s++;
 				while (isspace(*s))
 					s++;
 				if (*(s++) != '(')
 					break;
-				while (isspace(*s))
-					s++;
 				mpfr_strtofr(m, s, &t, 0, rnd);
 				if (t <= s)
 					break;
 				s = t;
-				arf_set_mpfr(arb_midref(y + j), m);
+				if (negate)
+					mpfr_neg(m, m, MPFR_RNDZ);
 				while (isspace(*s))
 					s++;
 				if (*(s++) != '+' || *(s++) != '/' || *(s++) != '-')
 					break;
 				while (isspace(*s))
 					s++;
+				if (*s == '+' || *s == '-')
+					break;
 				mpfr_strtofr(r, s, &t, 0, MPFR_RNDA);
 				if (t <= s)
 					break;
 				s = t;
-				arf_set_mpfr(tmp, r);
-				arf_get_mag(arb_radref(y + j), tmp);
 				while (isspace(*s))
 					s++;
 				if (*(s++) != ')')
@@ -175,11 +174,14 @@ SEXP R_flint_arb_initialize(SEXP object, SEXP s_length, SEXP s_x,
 					s++;
 				if (*s != '\0')
 					break;
+				arf_set_mpfr(arb_midref(y + jy), m);
+				arf_set_mpfr(tmp, r);
+				arf_get_mag(arb_radref(y + jy), tmp);
 			}
 			mpfr_clear(m);
 			mpfr_clear(r);
 			arf_clear(tmp);
-			if (j < ny)
+			if (jy < ny)
 				Rf_error(_("invalid input in string conversion"));
 			break;
 		}
@@ -188,71 +190,71 @@ SEXP R_flint_arb_initialize(SEXP object, SEXP s_length, SEXP s_x,
 			case R_FLINT_CLASS_ULONG:
 			{
 				const ulong *x = R_flint_get_pointer(s_x);
-				for (j = 0; j < ny; ++j)
-					arb_set_ui(y + j, x[j % nx]);
+				for (jy = 0; jy < ny; ++jy)
+					arb_set_ui(y + jy, x[jy % nx]);
 				break;
 			}
 			case R_FLINT_CLASS_SLONG:
 			{
 				const slong *x = R_flint_get_pointer(s_x);
-				for (j = 0; j < ny; ++j)
-					arb_set_si(y + j, x[j % nx]);
+				for (jy = 0; jy < ny; ++jy)
+					arb_set_si(y + jy, x[jy % nx]);
 				break;
 			}
 			case R_FLINT_CLASS_FMPZ:
 			{
 				const fmpz *x = R_flint_get_pointer(s_x);
-				for (j = 0; j < ny; ++j)
-					arb_set_fmpz(y + j, x + j % nx);
+				for (jy = 0; jy < ny; ++jy)
+					arb_set_fmpz(y + jy, x + jy % nx);
 				break;
 			}
 			case R_FLINT_CLASS_FMPQ:
 			{
 				const fmpq *x = R_flint_get_pointer(s_x);
 				slong prec = asPrec(R_NilValue, __func__);
-				for (j = 0; j < ny; ++j)
-					arb_fmpz_div_fmpz(y + j, fmpq_numref(x + j % nx), fmpq_denref(x + j % nx), prec);
+				for (jy = 0; jy < ny; ++jy)
+					arb_fmpz_div_fmpz(y + jy, fmpq_numref(x + jy % nx), fmpq_denref(x + jy % nx), prec);
 				break;
 			}
 			case R_FLINT_CLASS_MAG:
 			{
 				mag_srcptr x = R_flint_get_pointer(s_x);
-				for (j = 0; j < ny; ++j) {
-					arf_set_mag(arb_midref(y + j), x + j % nx);
-					mag_zero(arb_radref(y + j));
+				for (jy = 0; jy < ny; ++jy) {
+					arf_set_mag(arb_midref(y + jy), x + jy % nx);
+					mag_zero(arb_radref(y + jy));
 				}
 				break;
 			}
 			case R_FLINT_CLASS_ARF:
 			{
 				arf_srcptr x = R_flint_get_pointer(s_x);
-				for (j = 0; j < ny; ++j) {
-					arf_set(arb_midref(y + j), x + j % nx);
-					mag_zero(arb_radref(y + j));
+				for (jy = 0; jy < ny; ++jy) {
+					arf_set(arb_midref(y + jy), x + jy % nx);
+					mag_zero(arb_radref(y + jy));
 				}
 				break;
 			}
 			case R_FLINT_CLASS_ACF:
 			{
 				acf_srcptr x = R_flint_get_pointer(s_x);
-				for (j = 0; j < ny; ++j) {
-					arf_set(arb_midref(y + j), acf_realref(x + j % nx));
-					mag_zero(arb_radref(y + j));
+				for (jy = 0; jy < ny; ++jy) {
+					arf_set(arb_midref(y + jy), acf_realref(x + jy % nx));
+					mag_zero(arb_radref(y + jy));
 				}
 				break;
 			}
 			case R_FLINT_CLASS_ARB:
 			{
 				arb_srcptr x = R_flint_get_pointer(s_x);
-				for (j = 0; j < ny; ++j)
-					arb_set(y + j, x + j % nx);
+				for (jy = 0; jy < ny; ++jy)
+					arb_set(y + jy, x + jy % nx);
 				break;
 			}
 			case R_FLINT_CLASS_ACB:
 			{
 				acb_srcptr x = R_flint_get_pointer(s_x);
-				for (j = 0; j < ny; ++j)
-					arb_set(y + j, acb_realref(x + j % nx));
+				for (jy = 0; jy < ny; ++jy)
+					arb_set(y + jy, acb_realref(x + jy % nx));
 				break;
 			}
 			case R_FLINT_CLASS_INVALID:
@@ -261,23 +263,9 @@ SEXP R_flint_arb_initialize(SEXP object, SEXP s_length, SEXP s_x,
 			}
 			break;
 		}
-		if (s_x != R_NilValue && ny > 0 && ny <= R_XLEN_T_MAX) {
-		SEXP sx = Rf_getAttrib(s_x, R_NamesSymbol);
-		if (sx != R_NilValue && XLENGTH(sx) > 0) {
-		PROTECT(sx);
-		if (nx == ny)
-		R_do_slot_assign(object, R_flint_symbol_names, sx);
-		else {
-		SEXP sy = Rf_allocVector(STRSXP, (R_xlen_t) ny);
-		for (j = 0; j < ny; ++j)
-			SET_STRING_ELT(sy, (R_xlen_t) j,
-			               STRING_ELT(sx, (R_xlen_t) (j % nx)));
-		R_do_slot_assign(object, R_flint_symbol_names, sy);
-		}
-		UNPROTECT(1);
-		}
-		}
 	}
+	setDDNN(object, s_dim, s_dimnames, s_names);
+	UNPROTECT(3);
 	return object;
 }
 
@@ -298,12 +286,7 @@ SEXP R_flint_arb_part(SEXP object, SEXP s_op)
 		for (j = 0; j < n; ++j)
 			mag_set(y + j, arb_radref(x + j));
 	}
-	SEXP nms = R_do_slot(object, R_flint_symbol_names);
-	if (XLENGTH(nms) > 0) {
-		PROTECT(nms);
-		R_do_slot_assign(ans, R_flint_symbol_names, nms);
-		UNPROTECT(1);
-	}
+	setDDNN1(ans, object);
 	UNPROTECT(1);
 	return ans;
 }
@@ -340,29 +323,20 @@ SEXP R_flint_arb_atomic(SEXP object)
 	return ans;
 }
 
-SEXP R_flint_arb_ops2(SEXP s_op, SEXP s_x, SEXP s_y)
+SEXP R_flint_arb_ops2(SEXP s_op, SEXP s_x, SEXP s_y, SEXP s_dots)
 {
 	size_t op = strmatch(CHAR(STRING_ELT(s_op, 0)), R_flint_ops2);
-	mp_limb_t
+	mp_limb_t jz,
 		nx = R_flint_get_length(s_x),
-		ny = R_flint_get_length(s_y);
+		ny = R_flint_get_length(s_y),
+		nz = RECYCLE2(nx, ny);
 	arb_srcptr
 		x = R_flint_get_pointer(s_x),
 		y = R_flint_get_pointer(s_y);
-	if (nx > 0 && ny > 0 && ((nx < ny) ? ny % nx : nx % ny))
-		Rf_warning(_("longer object length is not a multiple of shorter object length"));
-	mp_limb_t j, n = RECYCLE2(nx, ny);
+	int dz[3];
+	int mop = checkConformable(s_x, s_y, nx, ny, matrixop(op), dz);
+	if (mop >= 0) nz = (mp_limb_t) dz[0] * (mp_limb_t) dz[1];
 	slong prec = asPrec(R_NilValue, __func__);
-#define COMMON \
-	do { \
-	SEXP nms; \
-	if ((nx == n && XLENGTH(nms = R_do_slot(s_x, R_flint_symbol_names)) > 0) || \
-	    (ny == n && XLENGTH(nms = R_do_slot(s_y, R_flint_symbol_names)) > 0)) { \
-		PROTECT(nms); \
-		R_do_slot_assign(ans, R_flint_symbol_names, nms); \
-		UNPROTECT(1); \
-	} \
-	} while (0)
 	switch (op) {
 	case  1: /*   "+" */
 	case  2: /*   "-" */
@@ -371,31 +345,31 @@ SEXP R_flint_arb_ops2(SEXP s_op, SEXP s_x, SEXP s_y)
 	case  7: /*   "^" */
 	{
 		SEXP ans = PROTECT(newObject("arb"));
-		arb_ptr z = (n) ? flint_calloc(n, sizeof(arb_t)) : 0;
-		R_flint_set(ans, z, n, (R_CFinalizer_t) &R_flint_arb_finalize);
+		arb_ptr z = (nz) ? flint_calloc(nz, sizeof(arb_t)) : 0;
+		R_flint_set(ans, z, nz, (R_CFinalizer_t) &R_flint_arb_finalize);
 		switch (op) {
 		case 1: /*   "+" */
-			for (j = 0; j < n; ++j)
-				arb_add(z + j, x + j % nx, y + j % ny, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_add(z + jz, x + jz % nx, y + jz % ny, prec);
 			break;
 		case 2: /*   "-" */
-			for (j = 0; j < n; ++j)
-				arb_sub(z + j, x + j % nx, y + j % ny, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_sub(z + jz, x + jz % nx, y + jz % ny, prec);
 			break;
 		case 3: /*   "*" */
-			for (j = 0; j < n; ++j)
-				arb_mul(z + j, x + j % nx, y + j % ny, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_mul(z + jz, x + jz % nx, y + jz % ny, prec);
 			break;
 		case 6: /*   "/" */
-			for (j = 0; j < n; ++j)
-				arb_div(z + j, x + j % nx, y + j % ny, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_div(z + jz, x + jz % nx, y + jz % ny, prec);
 			break;
 		case 7: /*   "^" */
-			for (j = 0; j < n; ++j)
-				arb_pow(z + j, x + j % nx, y + j % ny, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_pow(z + jz, x + jz % nx, y + jz % ny, prec);
 			break;
 		}
-		COMMON;
+		setDDNN2(ans, s_x, s_y, nz, nx, ny, mop);
 		UNPROTECT(1);
 		return ans;
 	}
@@ -408,111 +382,310 @@ SEXP R_flint_arb_ops2(SEXP s_op, SEXP s_x, SEXP s_y)
 	case 14: /*   "&" */
 	case 15: /*   "|" */
 	{
-		ERROR_TOO_LONG(n, R_XLEN_T_MAX);
-		SEXP ans = PROTECT(Rf_allocVector(LGLSXP, (R_xlen_t) n));
+		ERROR_TOO_LONG(nz, R_XLEN_T_MAX);
+		SEXP ans = PROTECT(Rf_allocVector(LGLSXP, (R_xlen_t) nz));
 		int *z = LOGICAL(ans);
 		switch (op) {
 		case  8: /*  "==" */
-			for (j = 0; j < n; ++j)
-				z[j] =
-				(ARB_CONTAINS_NAN(x + j % nx) ||
-				 ARB_CONTAINS_NAN(y + j % ny))
+			for (jz = 0; jz < nz; ++jz)
+				z[jz] =
+				(ARB_CONTAINS_NAN(x + jz % nx) ||
+				 ARB_CONTAINS_NAN(y + jz % ny))
 				? NA_LOGICAL
-				: arb_eq(x + j % nx, y + j % ny) != 0;
+				: arb_eq(x + jz % nx, y + jz % ny) != 0;
 			break;
 		case  9: /*  "!=" */
-			for (j = 0; j < n; ++j)
-				z[j] =
-				(ARB_CONTAINS_NAN(x + j % nx) ||
-				 ARB_CONTAINS_NAN(y + j % ny))
+			for (jz = 0; jz < nz; ++jz)
+				z[jz] =
+				(ARB_CONTAINS_NAN(x + jz % nx) ||
+				 ARB_CONTAINS_NAN(y + jz % ny))
 				? NA_LOGICAL
-				: arb_ne(x + j % nx, y + j % ny) != 0;
+				: arb_ne(x + jz % nx, y + jz % ny) != 0;
 			break;
 		case 10: /*   "<" */
-			for (j = 0; j < n; ++j)
-				z[j] =
-				(ARB_CONTAINS_NAN(x + j % nx) ||
-				 ARB_CONTAINS_NAN(y + j % ny))
+			for (jz = 0; jz < nz; ++jz)
+				z[jz] =
+				(ARB_CONTAINS_NAN(x + jz % nx) ||
+				 ARB_CONTAINS_NAN(y + jz % ny))
 				? NA_LOGICAL
-				: arb_lt(x + j % nx, y + j % ny) != 0;
+				: arb_lt(x + jz % nx, y + jz % ny) != 0;
 			break;
 		case 11: /*   ">" */
-			for (j = 0; j < n; ++j)
-				z[j] =
-				(ARB_CONTAINS_NAN(x + j % nx) ||
-				 ARB_CONTAINS_NAN(y + j % ny))
+			for (jz = 0; jz < nz; ++jz)
+				z[jz] =
+				(ARB_CONTAINS_NAN(x + jz % nx) ||
+				 ARB_CONTAINS_NAN(y + jz % ny))
 				? NA_LOGICAL
-				: arb_gt(x + j % nx, y + j % ny) != 0;
+				: arb_gt(x + jz % nx, y + jz % ny) != 0;
 			break;
 		case 12: /*  "<=" */
-			for (j = 0; j < n; ++j)
-				z[j] =
-				(ARB_CONTAINS_NAN(x + j % nx) ||
-				 ARB_CONTAINS_NAN(y + j % ny))
+			for (jz = 0; jz < nz; ++jz)
+				z[jz] =
+				(ARB_CONTAINS_NAN(x + jz % nx) ||
+				 ARB_CONTAINS_NAN(y + jz % ny))
 				? NA_LOGICAL
-				: arb_le(x + j % nx, y + j % ny) != 0;
+				: arb_le(x + jz % nx, y + jz % ny) != 0;
 			break;
 		case 13: /*  ">=" */
-			for (j = 0; j < n; ++j)
-				z[j] =
-				(ARB_CONTAINS_NAN(x + j % nx) ||
-				 ARB_CONTAINS_NAN(y + j % ny))
+			for (jz = 0; jz < nz; ++jz)
+				z[jz] =
+				(ARB_CONTAINS_NAN(x + jz % nx) ||
+				 ARB_CONTAINS_NAN(y + jz % ny))
 				? NA_LOGICAL
-				: arb_ge(x + j % nx, y + j % ny) != 0;
+				: arb_ge(x + jz % nx, y + jz % ny) != 0;
 			break;
 		case 14: /*   "&" */
-			for (j = 0; j < n; ++j)
-				z[j] =
-				(ARB_CONTAINS_ZERO(x + j % nx) ||
-				 ARB_CONTAINS_ZERO(y + j % ny))
+			for (jz = 0; jz < nz; ++jz)
+				z[jz] =
+				(ARB_CONTAINS_ZERO(x + jz % nx) ||
+				 ARB_CONTAINS_ZERO(y + jz % ny))
 				? 0
 				:
-				(ARB_CONTAINS_NAN(x + j % nx) ||
-				 ARB_CONTAINS_NAN(y + j % ny))
+				(ARB_CONTAINS_NAN(x + jz % nx) ||
+				 ARB_CONTAINS_NAN(y + jz % ny))
 				? NA_LOGICAL
 				: 1;
 			break;
 		case 15: /*   "|" */
-			for (j = 0; j < n; ++j)
-				z[j] =
-				(ARB_CONTAINS_NONZERO(x + j % nx) ||
-				 ARB_CONTAINS_NONZERO(y + j % ny))
+			for (jz = 0; jz < nz; ++jz)
+				z[jz] =
+				(ARB_CONTAINS_NONZERO(x + jz % nx) ||
+				 ARB_CONTAINS_NONZERO(y + jz % ny))
 				? 1
 				:
-				(ARB_CONTAINS_NAN(x + j % nx) ||
-				 ARB_CONTAINS_NAN(y + j % ny))
+				(ARB_CONTAINS_NAN(x + jz % nx) ||
+				 ARB_CONTAINS_NAN(y + jz % ny))
 				? NA_LOGICAL
 				: 0;
 			break;
 		}
-		COMMON;
+		setDDNN2(ans, s_x, s_y, nz, nx, ny, mop);
+		UNPROTECT(1);
+		return ans;
+	}
+	case 16: /*        "%*%" */
+	case 17: /*  "crossprod" */
+	case 18: /* "tcrossprod" */
+	{
+		/* C = A B                            */
+		/*                                    */
+		/*        %*%: C = Z', A = Y', B = X' */
+		/*  crossprod: C = Z', A = Y', B = X  */
+		/* tcrossprod: C = Z', A = Y , B = X' */
+
+		SEXP ans = PROTECT(newObject("arb"));
+		arb_ptr z = (nz) ? flint_calloc(nz, sizeof(arb_t)) : 0;
+		R_flint_set(ans, z, nz, (R_CFinalizer_t) &R_flint_arb_finalize);
+		int tx = (mop & 1) != 0, ty = (mop & 2) != 0, i, j;
+		mp_limb_t jx, jy, ja, jb;
+		arb_mat_t mc, ma, mb;
+		mc->c = mb->c = dz[0];
+		mc->r = ma->r = dz[1];
+		ma->c = mb->r = dz[2];
+		mc->entries = z;
+		ma->entries = (ty) ? ((ny) ? flint_calloc(ny, sizeof(arb_t)) : 0) : (void *) y;
+		mb->entries = (tx) ? ((nx) ? flint_calloc(nx, sizeof(arb_t)) : 0) : (void *) x;
+		if (ty) {
+			ja = jy = 0;
+			for (i = 0; i < ma->r; ++i, jy -= ny - 1)
+				for (j = 0; j < ma->c; ++j, ++ja, jy += ma->r)
+					arb_set(ma->entries + ja, y + jy);
+		}
+		if (tx) {
+			jb = jx = 0;
+			for (i = 0; i < mb->r; ++i, jx -= nx - 1)
+				for (j = 0; j < mb->c; ++j, ++jb, jx += mb->r)
+					arb_set(mb->entries + jb, x + jx);
+		}
+#ifndef HAVE_FMPZ_MAT_STRUCT_STRIDE
+		mc->rows = (mc->r) ? flint_calloc((size_t) mc->r, sizeof(arb_ptr)) : 0;
+		ma->rows = (ma->r) ? flint_calloc((size_t) ma->r, sizeof(arb_ptr)) : 0;
+		mb->rows = (mb->r) ? flint_calloc((size_t) mb->r, sizeof(arb_ptr)) : 0;
+		if (mc->r) {
+			mc->rows[0] = mc->entries;
+			for (i = 1; i < mc->r; ++i)
+				mc->rows[i] = mc->rows[i - 1] + mc->c;
+		}
+		if (ma->r) {
+			ma->rows[0] = ma->entries;
+			for (i = 1; i < ma->r; ++i)
+				ma->rows[i] = ma->rows[i - 1] + ma->c;
+		}
+		if (mb->r) {
+			mb->rows[0] = mb->entries;
+			for (i = 1; i < mb->r; ++i)
+				mb->rows[i] = mb->rows[i - 1] + mb->c;
+		}
+#else
+		mc->stride = mc->c;
+		ma->stride = ma->c;
+		mb->stride = ma->c;
+#endif
+		arb_mat_mul(mc, ma, mb, prec);
+		if (ty) {
+			for (ja = 0; ja < ny; ++ja)
+				arb_clear(ma->entries + ja);
+			flint_free(ma->entries);
+		}
+		if (tx) {
+			for (jb = 0; jb < nx; ++jb)
+				arb_clear(mb->entries + jb);
+			flint_free(mb->entries);
+		}
+#ifndef HAVE_FMPZ_MAT_STRUCT_STRIDE
+		flint_free(mc->rows);
+		flint_free(ma->rows);
+		flint_free(mb->rows);
+#endif
+		setDDNN2(ans, s_x, s_y, nz, nx, ny, mop);
+		UNPROTECT(1);
+		return ans;
+	}
+	case 19: /*      "solve" */
+	case 20: /*  "backsolve" */
+	case 21: /* "tbacksolve" */
+	{
+		/* A C = B                          */
+		/*                                  */
+		/*      solve: C = Z, A = X , B = Y */
+		/*  backsolve: C = Z, A = X , B = Y */
+		/* tbacksolve: C = Z, A = X', B = Y */
+		int uplo = 'N';
+		if (op == 20 || op == 21) {
+			SEXP s_uppertri = VECTOR_ELT(s_dots, 0);
+			if (XLENGTH(s_uppertri) == 0)
+				Rf_error(_("'%s' of length zero in '%s'"),
+				         "upper.tri", CHAR(STRING_ELT(s_op, 0)));
+			uplo = (LOGICAL_RO(s_uppertri)[0]) ? 'U' : 'L';
+		}
+		SEXP ans = PROTECT(newObject("arb"));
+		arb_ptr z = (nz) ? flint_calloc(nz, sizeof(arb_t)) : 0;
+		R_flint_set(ans, z, nz, (R_CFinalizer_t) &R_flint_arb_finalize);
+		int i, j, singular;
+		mp_limb_t jx, jy, jc, ja, jb;
+		arb_mat_t mc, ma, mb;
+		mc->r = mb->r = dz[0];
+		mc->c = mb->c = dz[1];
+		ma->r = ma->c = dz[2];
+		mc->entries = (nz) ? flint_calloc(nz, sizeof(arb_t)) : 0;
+		ma->entries = (nx) ? flint_calloc(nx, sizeof(arb_t)) : 0;
+		mb->entries = (ny) ? flint_calloc(ny, sizeof(arb_t)) : 0;
+		if (op == 21)
+		switch (uplo) {
+		case 'N':
+			for (ja = 0; ja < nx; ++ja)
+				arb_set(ma->entries + ja, x + ja);
+			break;
+		case 'U':
+			ja = 0;
+			for (i = 0; i < ma->r; ja += ma->r - (++i))
+				for (j = 0; j <= i; ++j, ++ja)
+					arb_set(ma->entries + ja, x + ja);
+			break;
+		case 'L':
+			ja = 0;
+			for (i = 0; i < ma->r; ja += (++i))
+				for (j = i; j < ma->c; ++j, ++ja)
+					arb_set(ma->entries + ja, x + ja);
+			break;
+		}
+		else
+		switch (uplo) {
+		case 'N':
+			ja = jx = 0;
+			for (i = 0; i < ma->r; ++i, jx -= nx - 1)
+				for (j = 0; j < ma->c; ++j, ++ja, jx += ma->r)
+					arb_set(ma->entries + ja, x + jx);
+			break;
+		case 'U':
+			ja = jx = 0;
+			for (i = 0; i < ma->r; ja += (++i), jx = ja)
+				for (j = i; j < ma->c; ++j, ++ja, jx += ma->r)
+					arb_set(ma->entries + ja, x + jx);
+			break;
+		case 'L':
+			ja = jx = 0;
+			for (i = 0; i < ma->r; ja += ma->c - (++i), jx = ja)
+				for (j = 0; j <= i; ++j, ++ja, jx += ma->r)
+					arb_set(ma->entries + ja, x + jx);
+			break;
+		}
+		jb = jy = 0;
+		for (i = 0; i < mb->r; ++i, jy -= ny - 1)
+			for (j = 0; j < mb->c; ++j, ++jb, jy += mb->r)
+				arb_set(mb->entries + jb, y + jy);
+#ifndef HAVE_FMPZ_MAT_STRUCT_STRIDE
+		mc->rows = (mc->r) ? flint_calloc((size_t) mc->r, sizeof(arb_ptr)) : 0;
+		ma->rows = (ma->r) ? flint_calloc((size_t) ma->r, sizeof(arb_ptr)) : 0;
+		mb->rows = (mb->r) ? flint_calloc((size_t) mb->r, sizeof(arb_ptr)) : 0;
+		if (mc->r) {
+			mc->rows[0] = mc->entries;
+			for (i = 1; i < mc->r; ++i)
+				mc->rows[i] = mc->rows[i - 1] + mc->c;
+		}
+		if (ma->r) {
+			ma->rows[0] = ma->entries;
+			for (i = 1; i < ma->r; ++i)
+				ma->rows[i] = ma->rows[i - 1] + ma->c;
+		}
+		if (mb->r) {
+			mb->rows[0] = mb->entries;
+			for (i = 1; i < mb->r; ++i)
+				mb->rows[i] = mb->rows[i - 1] + mb->c;
+		}
+#else
+		mc->stride = mc->c;
+		ma->stride = ma->c;
+		mb->stride = ma->c;
+#endif
+		if (uplo == 'N')
+			singular = !arb_mat_approx_solve(mc, ma, mb, prec);
+		else if ((uplo == 'U') == (op != 21)) {
+			arb_mat_solve_triu(mc, ma, mb, 0, prec);
+			singular = 0;
+		}
+		else {
+			arb_mat_solve_tril(mc, ma, mb, 0, prec);
+			singular = 0;
+		}
+		jc = jz = 0;
+		for (j = 0; j < mc->c; ++j, jc -= nz - 1)
+			for (i = 0; i < mc->r; ++i, ++jz, jc += mc->c) {
+				arb_set(z + jz, mc->entries + jc);
+				arb_clear(mc->entries + jc);
+			}
+		for (ja = 0; ja < nx; ++ja)
+			arb_clear(ma->entries + ja);
+		for (jb = 0; jb < ny; ++jb)
+			arb_clear(mb->entries + jb);
+		flint_free(mc->entries);
+		flint_free(ma->entries);
+		flint_free(mb->entries);
+#ifndef HAVE_FMPZ_MAT_STRUCT_STRIDE
+		flint_free(mc->rows);
+		flint_free(ma->rows);
+		flint_free(mb->rows);
+#endif
+		if (singular)
+			Rf_error(_("matrix is exactly singular or precision is insufficient"));
+		setDDNN2(ans, s_x, s_y, nz, nx, ny, mop);
 		UNPROTECT(1);
 		return ans;
 	}
 	default:
-		Rf_error(_("operation '%s' is not yet implemented for class '%s'"),
+		Rf_error(_("operation '%s' is not yet implemented for class \"%s\""),
 		         CHAR(STRING_ELT(s_op, 0)), "arb");
 		return R_NilValue;
 	}
-#undef COMMON
 }
 
 SEXP R_flint_arb_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 {
 	size_t op = strmatch(CHAR(STRING_ELT(s_op, 0)), R_flint_ops1);
-	mp_limb_t j, n = R_flint_get_length(s_x);
+	mp_limb_t jx, jz, nx = R_flint_get_length(s_x), nz = nx;
 	arb_srcptr x = R_flint_get_pointer(s_x);
 	slong prec = asPrec(R_NilValue, __func__);
 	arf_rnd_t rnd = remapRnd(asRnd(R_NilValue, __func__));
-#define COMMON \
-	do { \
-	SEXP nms = R_do_slot(s_x, R_flint_symbol_names); \
-	if (XLENGTH(nms) > 0) { \
-		PROTECT(nms); \
-		R_do_slot_assign(ans, R_flint_symbol_names, nms); \
-		UNPROTECT(1); \
-	} \
-	} while (0)
 	switch (op) {
 	case  1: /*        "+" */
 	case  2: /*        "-" */
@@ -560,107 +733,107 @@ SEXP R_flint_arb_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 	case 49: /*   "signif" */
 	{
 		SEXP ans = PROTECT(newObject("arb"));
-		arb_ptr z = (n) ? flint_calloc(n, sizeof(arb_t)) : 0;
-		R_flint_set(ans, z, n, (R_CFinalizer_t) &R_flint_arb_finalize);
+		arb_ptr z = (nz) ? flint_calloc(nz, sizeof(arb_t)) : 0;
+		R_flint_set(ans, z, nz, (R_CFinalizer_t) &R_flint_arb_finalize);
 		switch (op) {
 		case  1: /*        "+" */
 		case  8: /*     "Conj" */
 		case  9: /*       "Re" */
-			for (j = 0; j < n; ++j)
-				arb_set(z + j, x + j);
+			for (jz = 0; jz < nz; ++jz)
+				arb_set(z + jz, x + jz);
 			break;
 		case  2: /*        "-" */
-			for (j = 0; j < n; ++j)
-				arb_neg(z + j, x + j);
+			for (jz = 0; jz < nz; ++jz)
+				arb_neg(z + jz, x + jz);
 			break;
 		case 10: /*       "Im" */
-			for (j = 0; j < n; ++j)
-				arb_zero(z + j);
+			for (jz = 0; jz < nz; ++jz)
+				arb_zero(z + jz);
 			break;
 		case 11: /*      "Mod" */
 		case 13: /*      "abs" */
-			for (j = 0; j < n; ++j)
-				arb_nonnegative_abs(z + j, x + j);
+			for (jz = 0; jz < nz; ++jz)
+				arb_nonnegative_abs(z + jz, x + jz);
 			break;
 		case 12: /*      "Arg" */
 		{
 			arb_t pi;
 			arb_init(pi);
 			arb_const_pi(pi, prec);
-			for (j = 0; j < n; ++j) {
-				if (arf_is_nan(arb_midref(x + j)) ||
-				    mag_is_inf(arb_radref(x + j)) ||
-				    arf_cmpabs_mag(arb_midref(x + j), arb_radref(x + j)) < 0) {
-					arf_zero(arb_midref(z + j));
-					mag_const_pi(arb_radref(z + j));
+			for (jz = 0; jz < nz; ++jz) {
+				if (arf_is_nan(arb_midref(x + jz)) ||
+				    mag_is_inf(arb_radref(x + jz)) ||
+				    arf_cmpabs_mag(arb_midref(x + jz), arb_radref(x + jz)) < 0) {
+					arf_zero(arb_midref(z + jz));
+					mag_const_pi(arb_radref(z + jz));
 				}
-				else if (arf_is_zero(arb_midref(x + j)))
-					arb_zero(z + j);
+				else if (arf_is_zero(arb_midref(x + jz)))
+					arb_zero(z + jz);
 				else {
-					arb_set(z + j, pi);
-					if (arf_sgn(arb_midref(x + j)) < 0)
-					arb_neg(z + j, z + j);
+					arb_set(z + jz, pi);
+					if (arf_sgn(arb_midref(x + jz)) < 0)
+					arb_neg(z + jz, z + jz);
 				}
 			}
 			arb_clear(pi);
 			break;
 		}
 		case 14: /*     "sign" */
-			for (j = 0; j < n; ++j)
-				arb_sgn(z + j, x + j);
+			for (jz = 0; jz < nz; ++jz)
+				arb_sgn(z + jz, x + jz);
 			break;
 		case 15: /*     "sqrt" */
-			for (j = 0; j < n; ++j)
-				arb_sqrt(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_sqrt(z + jz, x + jz, prec);
 			break;
 		case 16: /*    "floor" */
-			for (j = 0; j < n; ++j)
-				arb_floor(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_floor(z + jz, x + jz, prec);
 			break;
 		case 17: /*  "ceiling" */
-			for (j = 0; j < n; ++j)
-				arb_ceil(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_ceil(z + jz, x + jz, prec);
 			break;
 		case 18: /*    "trunc" */
-			for (j = 0; j < n; ++j)
-				arb_trunc(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_trunc(z + jz, x + jz, prec);
 			break;
 		case 19: /*   "cummin" */
-			if (n) {
+			if (nz) {
 			arb_srcptr last = x;
-			for (j = 0; j < n && !ARB_CONTAINS_NAN(x + j); ++j)
-				arb_min(z + j, last, x + j, prec);
-			for (; j < n; ++j)
-				arb_indeterminate(z + j);
+			for (jz = 0; jz < nz && !ARB_CONTAINS_NAN(x + jz); ++jz)
+				arb_min(z + jz, last, x + jz, prec);
+			for (; jz < nz; ++jz)
+				arb_indeterminate(z + jz);
 			}
 			break;
 		case 20: /*   "cummax" */
-			if (n) {
+			if (nz) {
 			arb_srcptr last = x;
-			for (j = 0; j < n && !ARB_CONTAINS_NAN(x + j); ++j)
-				arb_max(z + j, last, x + j, prec);
-			for (; j < n; ++j)
-				arb_indeterminate(z + j);
+			for (jz = 0; jz < nz && !ARB_CONTAINS_NAN(x + jz); ++jz)
+				arb_max(z + jz, last, x + jz, prec);
+			for (; jz < nz; ++jz)
+				arb_indeterminate(z + jz);
 			}
 			break;
 		case 21: /*   "cumsum" */
-			if (n) {
+			if (nz) {
 			arb_set(z, x);
-			for (j = 1; j < n; ++j)
-				arb_add(z + j, z + j - 1, x + j, prec);
+			for (jz = 1; jz < nz; ++jz)
+				arb_add(z + jz, z + jz - 1, x + jz, prec);
 			}
 			break;
 		case 22: /*  "cumprod" */
-			if (n)
+			if (nz)
 			arb_set(z, x);
-			for (j = 1; j < n; ++j)
-				arb_mul(z + j, z + j - 1, x + j, prec);
+			for (jz = 1; jz < nz; ++jz)
+				arb_mul(z + jz, z + jz - 1, x + jz, prec);
 			break;
 		case 23: /*      "log" */
 		case 24: /*    "log10" */
 		case 25: /*     "log2" */
-			for (j = 0; j < n; ++j)
-				arb_log(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_log(z + jz, x + jz, prec);
 			if (op != 23 || s_dots != R_NilValue) {
 			arb_t tmp;
 			arb_init(tmp);
@@ -675,94 +848,94 @@ SEXP R_flint_arb_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 				arb_set(tmp, base);
 			}
 			arb_log(tmp, tmp, prec);
-			for (j = 0; j < n; ++j)
-				arb_div(z + j, z + j, tmp, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_div(z + jz, z + jz, tmp, prec);
 			arb_clear(tmp);
 			}
 			break;
 		case 26: /*    "log1p" */
-			for (j = 0; j < n; ++j)
-				arb_log1p(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_log1p(z + jz, x + jz, prec);
 			break;
 		case 27: /*      "exp" */
-			for (j = 0; j < n; ++j)
-				arb_exp(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_exp(z + jz, x + jz, prec);
 			break;
 		case 28: /*    "expm1" */
-			for (j = 0; j < n; ++j)
-				arb_expm1(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_expm1(z + jz, x + jz, prec);
 			break;
 		case 29: /*      "cos" */
-			for (j = 0; j < n; ++j)
-				arb_cos(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_cos(z + jz, x + jz, prec);
 			break;
 		case 30: /*    "cospi" */
-			for (j = 0; j < n; ++j)
-				arb_cos_pi(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_cos_pi(z + jz, x + jz, prec);
 			break;
 		case 31: /*     "acos" */
-			for (j = 0; j < n; ++j)
-				arb_acos(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_acos(z + jz, x + jz, prec);
 			break;
 		case 32: /*     "cosh" */
-			for (j = 0; j < n; ++j)
-				arb_cosh(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_cosh(z + jz, x + jz, prec);
 			break;
 		case 33: /*    "acosh" */
-			for (j = 0; j < n; ++j)
-				arb_acosh(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_acosh(z + jz, x + jz, prec);
 			break;
 		case 34: /*      "sin" */
-			for (j = 0; j < n; ++j)
-				arb_sin(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_sin(z + jz, x + jz, prec);
 			break;
 		case 35: /*    "sinpi" */
-			for (j = 0; j < n; ++j)
-				arb_sin_pi(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_sin_pi(z + jz, x + jz, prec);
 			break;
 		case 36: /*     "asin" */
-			for (j = 0; j < n; ++j)
-				arb_asin(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_asin(z + jz, x + jz, prec);
 			break;
 		case 37: /*     "sinh" */
-			for (j = 0; j < n; ++j)
-				arb_sinh(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_sinh(z + jz, x + jz, prec);
 			break;
 		case 38: /*    "asinh" */
-			for (j = 0; j < n; ++j)
-				arb_asinh(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_asinh(z + jz, x + jz, prec);
 			break;
 		case 39: /*      "tan" */
-			for (j = 0; j < n; ++j)
-				arb_tan(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_tan(z + jz, x + jz, prec);
 			break;
 		case 40: /*    "tanpi" */
-			for (j = 0; j < n; ++j)
-				arb_tan_pi(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_tan_pi(z + jz, x + jz, prec);
 			break;
 		case 41: /*     "atan" */
-			for (j = 0; j < n; ++j)
-				arb_atan(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_atan(z + jz, x + jz, prec);
 			break;
 		case 42: /*     "tanh" */
-			for (j = 0; j < n; ++j)
-				arb_tanh(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_tanh(z + jz, x + jz, prec);
 			break;
 		case 43: /*    "atanh" */
-			for (j = 0; j < n; ++j)
-				arb_atanh(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_atanh(z + jz, x + jz, prec);
 			break;
 		case 44: /*    "gamma" */
-			for (j = 0; j < n; ++j)
-				arb_gamma(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_gamma(z + jz, x + jz, prec);
 			break;
 		case 45: /*   "lgamma" */
-			for (j = 0; j < n; ++j)
-				arb_lgamma(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_lgamma(z + jz, x + jz, prec);
 			break;
 		case 46: /*  "digamma" */
-			for (j = 0; j < n; ++j)
-				arb_digamma(z + j, x + j, prec);
+			for (jz = 0; jz < nz; ++jz)
+				arb_digamma(z + jz, x + jz, prec);
 			break;
 		case 47: /* "trigamma" */
 		{
@@ -772,10 +945,10 @@ SEXP R_flint_arb_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 			acb_init(tmp2);
 			acb_set_si(tmp1, 1);
 			arb_zero(acb_imagref(tmp2));
-			for (j = 0; j < n; ++j) {
-				arb_set(acb_realref(tmp2), x + j);
+			for (jz = 0; jz < nz; ++jz) {
+				arb_set(acb_realref(tmp2), x + jz);
 				acb_polygamma(tmp0, tmp1, tmp2, prec);
-				arb_set(z + j, acb_realref(tmp0));
+				arb_set(z + jz, acb_realref(tmp0));
 			}
 			acb_clear(tmp0);
 			acb_clear(tmp1);
@@ -808,11 +981,11 @@ SEXP R_flint_arb_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 			arf_one(s);
 			arf_div_fmpz(s, s, q, MAG_BITS << 1, ARF_RND_UP);
 			arf_get_mag(d, s);
-			for (j = 0; j < n; ++j) {
-				xm = arb_midref(x + j);
-				xr = arb_radref(x + j);
-				zm = arb_midref(z + j);
-				zr = arb_radref(z + j);
+			for (jz = 0; jz < nz; ++jz) {
+				xm = arb_midref(x + jz);
+				xr = arb_radref(x + jz);
+				zm = arb_midref(z + jz);
+				zr = arb_radref(z + jz);
 				if (!arf_is_finite(xm)) {
 				arf_set(zm, xm);
 				mag_inf(zr); /* FIXME: Is there another option? */
@@ -831,11 +1004,11 @@ SEXP R_flint_arb_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 			fmpz_pow_ui(p, p, (ulong) -1 - (ulong) digits + 1);
 			fmpz_divexact_si(q, p, 2);
 			mag_set_fmpz(d, q);
-			for (j = 0; j < n; ++j) {
-				xm = arb_midref(x + j);
-				xr = arb_radref(x + j);
-				zm = arb_midref(z + j);
-				zr = arb_radref(z + j);
+			for (jz = 0; jz < nz; ++jz) {
+				xm = arb_midref(x + jz);
+				xr = arb_radref(x + jz);
+				zm = arb_midref(z + jz);
+				zr = arb_radref(z + jz);
 				if (!arf_is_finite(xm)) {
 				arf_set(zm, xm);
 				mag_inf(zr); /* FIXME: Is there another option? */
@@ -882,11 +1055,11 @@ SEXP R_flint_arb_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 			fmpz_init(r);
 			arf_init(s);
 			mag_init(d);
-			for (j = 0; j < n; ++j) {
-				xm = arb_midref(x + j);
-				xr = arb_radref(x + j);
-				zm = arb_midref(z + j);
-				zr = arb_radref(z + j);
+			for (jz = 0; jz < nz; ++jz) {
+				xm = arb_midref(x + jz);
+				xr = arb_radref(x + jz);
+				zm = arb_midref(z + jz);
+				zr = arb_radref(z + jz);
 				if (!arf_is_finite(xm)) {
 				arf_set(zm, xm);
 				mag_inf(zr); /* FIXME: Is there another option? */
@@ -939,7 +1112,7 @@ SEXP R_flint_arb_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 			break;
 		}
 		}
-		COMMON;
+		setDDNN1(ans, s_x);
 		UNPROTECT(1);
 		return ans;
 	}
@@ -955,16 +1128,16 @@ SEXP R_flint_arb_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 			Rf_error(_("'%s' of length zero in '%s'"),
 			         "na.rm", CHAR(STRING_ELT(s_op, 0)));
 		int narm = LOGICAL_RO(s_narm)[0];
+		nz = (op == 52) ? 2 : 1;
 		SEXP ans = PROTECT(newObject("arb"));
-		mp_limb_t s = (op == 52) ? 2 : 1;
-		arb_ptr z = flint_calloc(s, sizeof(arb_t));
-		R_flint_set(ans, z, s, (R_CFinalizer_t) &R_flint_arb_finalize);
+		arb_ptr z = flint_calloc(nz, sizeof(arb_t));
+		R_flint_set(ans, z, nz, (R_CFinalizer_t) &R_flint_arb_finalize);
 		switch (op) {
 		case 50: /*     "min" */
 			arb_pos_inf(z);
-			for (j = 0; j < n; ++j)
-				if (!ARB_CONTAINS_NAN(x + j))
-					arb_min(z, z, x + j, prec);
+			for (jx = 0; jx < nx; ++jx)
+				if (!ARB_CONTAINS_NAN(x + jx))
+					arb_min(z, z, x + jx, prec);
 				else if (!narm) {
 					arb_indeterminate(z);
 					break;
@@ -972,9 +1145,9 @@ SEXP R_flint_arb_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 			break;
 		case 51: /*     "max" */
 			arb_neg_inf(z);
-			for (j = 0; j < n; ++j)
-				if (!ARB_CONTAINS_NAN(x + j))
-					arb_max(z, z, x + j, prec);
+			for (jx = 0; jx < nx; ++jx)
+				if (!ARB_CONTAINS_NAN(x + jx))
+					arb_max(z, z, x + jx, prec);
 				else if (!narm) {
 					arb_indeterminate(z);
 					break;
@@ -983,10 +1156,10 @@ SEXP R_flint_arb_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 		case 52: /*   "range" */
 			arb_pos_inf(z);
 			arb_neg_inf(z + 1);
-			for (j = 0; j < n; ++j)
-				if (!ARB_CONTAINS_NAN(x + j)) {
-					arb_min(z, z, x + j, prec);
-					arb_max(z + 1, z + 1, x + j, prec);
+			for (jx = 0; jx < nx; ++jx)
+				if (!ARB_CONTAINS_NAN(x + jx)) {
+					arb_min(z, z, x + jx, prec);
+					arb_max(z + 1, z + 1, x + jx, prec);
 				} else if (!narm) {
 					arb_indeterminate(z);
 					arb_indeterminate(z + 1);
@@ -995,23 +1168,23 @@ SEXP R_flint_arb_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 			break;
 		case 53: /*     "sum" */
 			arb_zero(z);
-			for (j = 0; j < n; ++j)
-				if (!(narm && ARB_CONTAINS_NAN(x + j)))
-				arb_add(z, z, x + j, prec);
+			for (jx = 0; jx < nx; ++jx)
+				if (!(narm && ARB_CONTAINS_NAN(x + jx)))
+				arb_add(z, z, x + jx, prec);
 			break;
 		case 54: /*    "prod" */
 			arb_one(z);
-			for (j = 0; j < n; ++j)
-				if (!(narm && ARB_CONTAINS_NAN(x + j)))
-				arb_mul(z, z, x + j, prec);
+			for (jx = 0; jx < nx; ++jx)
+				if (!(narm && ARB_CONTAINS_NAN(x + jx)))
+				arb_mul(z, z, x + jx, prec);
 			break;
 		case 55: /*    "mean" */
 		{
-			mp_limb_t c = n;
+			mp_limb_t c = nx;
 			arb_zero(z);
-			for (j = 0; j < n; ++j)
-				if (!(narm && ARB_CONTAINS_NAN(x + j)))
-				arb_add(z, z, x + j, prec);
+			for (jx = 0; jx < nx; ++jx)
+				if (!(narm && ARB_CONTAINS_NAN(x + jx)))
+				arb_add(z, z, x + jx, prec);
 				else
 				--c;
 			if (c == 0)
@@ -1038,27 +1211,27 @@ SEXP R_flint_arb_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 		switch (op) {
 		case 56: /*     "any" */
 			/* Return 1 if and only if any does not contain zero */
-			for (j = 0; j < n; ++j)
-				if (arf_is_nan(arb_midref(x + j)))
+			for (jx = 0; jx < nx; ++jx)
+				if (arf_is_nan(arb_midref(x + jx)))
 					anyna = 1;
-				else if (arf_cmpabs_mag(arb_midref(x + j), arb_radref(x + j)) >  0)
+				else if (arf_cmpabs_mag(arb_midref(x + jx), arb_radref(x + jx)) >  0)
 					break;
-			z[0] = (j < n) ? 1 : (!narm && anyna) ? NA_LOGICAL : 0;
+			z[0] = (jx < nx) ? 1 : (!narm && anyna) ? NA_LOGICAL : 0;
 			break;
 		case 57: /*     "all" */
 			/* Return 1 if and only if all do   not contain zero */
-			for (j = 0; j < n; ++j)
-				if (arf_is_nan(arb_midref(x + j)))
+			for (jx = 0; jx < nx; ++jx)
+				if (arf_is_nan(arb_midref(x + jx)))
 					anyna = 1;
-				else if (arf_cmpabs_mag(arb_midref(x + j), arb_radref(x + j)) <= 0)
+				else if (arf_cmpabs_mag(arb_midref(x + jx), arb_radref(x + jx)) <= 0)
 					break;
-			z[0] = (j < n) ? 0 : (!narm && anyna) ? NA_LOGICAL : 1;
+			z[0] = (jx < nx) ? 0 : (!narm && anyna) ? NA_LOGICAL : 1;
 			break;
 		case 58: /*   "anyNA" */
-			for (j = 0; j < n; ++j)
-				if (arf_is_nan(arb_midref(x + j)))
+			for (jx = 0; jx < nx; ++jx)
+				if (arf_is_nan(arb_midref(x + jx)))
 					break;
-			z[0] = j < n;
+			z[0] = jx < nx;
 			break;
 		}
 		UNPROTECT(1);
@@ -1070,45 +1243,441 @@ SEXP R_flint_arb_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 	case  6: /*   "is.finite" */
 	case  7: /*           "!" */
 	{
-		ERROR_TOO_LONG(n, R_XLEN_T_MAX);
-		SEXP ans = PROTECT(Rf_allocVector(LGLSXP, (R_xlen_t) n));
+		ERROR_TOO_LONG(nz, R_XLEN_T_MAX);
+		SEXP ans = PROTECT(Rf_allocVector(LGLSXP, (R_xlen_t) nz));
 		int *z = LOGICAL(ans);
 		switch (op) {
 		case  3: /*       "is.na" */
 		case  4: /*      "is.nan" */
-			for (j = 0; j < n; ++j)
-				z[j] = arf_is_nan(arb_midref(x + j)) != 0;
+			for (jz = 0; jz < nz; ++jz)
+				z[jz] = arf_is_nan(arb_midref(x + jz)) != 0;
 			break;
 		case  5: /* "is.infinite" */
-			for (j = 0; j < n; ++j)
-				z[j] =
-					arf_is_inf(arb_midref(x + j)) != 0 ||
-					mag_is_inf(arb_radref(x + j)) != 0;
+			for (jz = 0; jz < nz; ++jz)
+				z[jz] =
+					arf_is_inf(arb_midref(x + jz)) != 0 ||
+					mag_is_inf(arb_radref(x + jz)) != 0;
 			break;
 		case  6: /*   "is.finite" */
-			for (j = 0; j < n; ++j)
-				z[j] =
-					arf_is_finite(arb_midref(x + j)) != 0 &&
-					mag_is_finite(arb_radref(x + j)) != 0;
+			for (jz = 0; jz < nz; ++jz)
+				z[jz] =
+					arf_is_finite(arb_midref(x + jz)) != 0 &&
+					mag_is_finite(arb_radref(x + jz)) != 0;
 			break;
 		case  7: /*           "!" */
-			for (j = 0; j < n; ++j)
-				if (arf_is_nan(arb_midref(x + j)))
-				z[j] = NA_LOGICAL;
+			for (jz = 0; jz < nz; ++jz)
+				if (arf_is_nan(arb_midref(x + jz)))
+				z[jz] = NA_LOGICAL;
 				else
-				z[j] =
-					arf_is_zero(arb_midref(x + j)) != 0 &&
-					mag_is_zero(arb_radref(x + j)) != 0;
+				z[jz] =
+					arf_is_zero(arb_midref(x + jz)) != 0 &&
+					mag_is_zero(arb_radref(x + jz)) != 0;
 			break;
 		}
-		COMMON;
+		setDDNN1(ans, s_x);
 		UNPROTECT(1);
 		return ans;
 	}
+	case 60: /*     "colSums" */
+	case 61: /*     "rowSums" */
+	case 62: /*    "colMeans" */
+	case 63: /*    "rowMeans" */
+	{
+		int byrow = op == 61 || op == 63, domean = op == 62 || op == 63;
+
+		SEXP dimx = PROTECT(R_do_slot(s_x, R_flint_symbol_dim));
+		if (dimx == R_NilValue || XLENGTH(dimx) < 2)
+			Rf_error(_("'%s' is not a matrix or a higher dimensional array"),
+			         "x");
+		const int *dx = INTEGER_RO(dimx);
+		int ndx = LENGTH(dimx);
+
+		SEXP s_narm = VECTOR_ELT(s_dots, 0);
+		if (XLENGTH(s_narm) == 0)
+			Rf_error(_("'%s' of length zero in '%s'"),
+			         "na.rm", CHAR(STRING_ELT(s_op, 0)));
+		int narm = LOGICAL_RO(s_narm)[0];
+
+		SEXP s_off = VECTOR_ELT(s_dots, 1);
+		if (XLENGTH(s_off) == 0)
+			Rf_error(_("'%s' of length zero in '%s'"),
+			         "dims", CHAR(STRING_ELT(s_op, 0)));
+		int off = INTEGER_RO(s_off)[0];
+		if (off < 1 || off >= ndx)
+			Rf_error(_("'%s' is not in 1:(length(dim(%s))-1)"),
+			         "dims", "x");
+
+		SEXP dimz = PROTECT(Rf_allocVector(INTSXP, (byrow) ? off : ndx - off));
+		int *dz = INTEGER(dimz), ndz = LENGTH(dimz), k;
+
+		nz = 1;
+		for (k = 0; k < ndz; ++k)
+			nz *= (mp_limb_t) (dz[k] = dx[(byrow) ? k : off + k]);
+		mp_limb_t jt, nt = nx/nz;
+
+		SEXP dimnamesx = R_do_slot(s_x, R_flint_symbol_dimnames),
+			dimnamesz = R_NilValue;
+		if (dimnamesx != R_NilValue) {
+			PROTECT(dimnamesx);
+			PROTECT(dimnamesz = Rf_allocVector(VECSXP, ndz));
+			for (k = 0; k < ndz; ++k)
+				SET_VECTOR_ELT(dimnamesz, k, VECTOR_ELT(dimnamesx, (byrow) ? k : off + k));
+			SEXP namesdimnamesx = Rf_getAttrib(dimnamesx, R_NamesSymbol),
+				namesdimnamesz = R_NilValue;
+			if (namesdimnamesx != R_NilValue) {
+				PROTECT(namesdimnamesx);
+				PROTECT(namesdimnamesz = Rf_allocVector(STRSXP, ndz));
+				for (k = 0; k < ndz; ++k)
+					SET_STRING_ELT(namesdimnamesz, k, STRING_ELT(namesdimnamesx, (byrow) ? k : off + k));
+				Rf_setAttrib(dimnamesz, R_NamesSymbol, namesdimnamesz);
+				UNPROTECT(2);
+			}
+			UNPROTECT(2);
+		}
+		PROTECT(dimnamesz);
+
+		SEXP ans = PROTECT(newObject("arb"));
+		arb_ptr z = (nz) ? flint_calloc(nz, sizeof(arb_t)) : 0;
+		R_flint_set(ans, z, nz, (R_CFinalizer_t) &R_flint_arb_finalize);
+		jx = 0;
+		if (byrow) {
+			mp_limb_t *c = 0;
+			if (domean && nz) {
+				c = (void *) R_alloc(nz, sizeof(mp_limb_t));
+				memset(c, 0, nz * sizeof(mp_limb_t));
+			}
+			for (jz = 0; jz < nz; ++jz)
+				arb_zero(z + jz);
+			for (jt = 0; jt < nt; ++jt)
+				for (jz = 0; jz < nz; ++jz, ++jx)
+					if (!(narm && ARB_CONTAINS_NAN(z + jz)))
+						arb_add(z + jz, z + jz, x + jx, prec);
+					else if (domean)
+						++c[jz];
+			if (domean) {
+			for (jz = 0; jz < nz; ++jz)
+				if (c[jz] == nt)
+					arb_indeterminate(z + jz);
+				else
+					arb_div_ui(z + jz, z + jz, nt - c[jz], prec);
+			}
+		} else {
+			mp_limb_t c = 0;
+			for (jz = 0; jz < nz; ++jz) {
+				arb_zero(z + jz);
+				for (jt = 0; jt < nt; ++jt, ++jx)
+					if (!(narm && ARB_CONTAINS_NAN(x + jx)))
+						arb_add(z + jz, z + jz, x + jx, prec);
+					else if (domean)
+						++c;
+				if (domean) {
+					if (c == nt)
+						arb_indeterminate(z + jz);
+					else
+						arb_div_ui(z + jz, z + jz, nt - c, prec);
+					c = 0;
+				}
+			}
+		}
+		if (ndz > 1)
+			setDDNN(ans, dimz, dimnamesz, R_NilValue);
+		else if (dimnamesz != R_NilValue)
+			setDDNN(ans, R_NilValue, R_NilValue, VECTOR_ELT(dimnamesz, 0));
+		UNPROTECT(4);
+		return ans;
+	}
+	case 64: /*      "solve" */
+	case 65: /*  "backsolve" */
+	case 66: /* "tbacksolve" */
+	{
+		/* A C = I                    */
+		/*                            */
+		/*      solve: C = Z', A = X' */
+		/*  backsolve: C = Z', A = X' */
+		/* tbacksolve: C = Z', A = X  */
+		SEXP dimz = PROTECT(R_do_slot(s_x, R_flint_symbol_dim));
+		const int *dz = 0;
+		if (dimz == R_NilValue || XLENGTH(dimz) != 2 ||
+		    (dz = INTEGER_RO(dimz), dz[0] != dz[1]))
+			Rf_error(_("argument is not a square matrix"));
+		int uplo = 'N';
+		if (op == 65 || op == 66) {
+			SEXP s_uppertri = VECTOR_ELT(s_dots, 0);
+			if (XLENGTH(s_uppertri) == 0)
+				Rf_error(_("'%s' of length zero in '%s'"),
+				         "upper.tri", CHAR(STRING_ELT(s_op, 0)));
+			uplo = (LOGICAL_RO(s_uppertri)[0]) ? 'U' : 'L';
+		}
+		SEXP ans = PROTECT(newObject("arb"));
+		arb_ptr z = (nz) ? flint_calloc(nz, sizeof(arb_t)) : 0;
+		R_flint_set(ans, z, nz, (R_CFinalizer_t) &R_flint_arb_finalize);
+		int i, j, singular;
+		mp_limb_t ja;
+		arb_mat_t mc, ma;
+		mc->r = mc->c = ma->r = ma->c = dz[0];
+		mc->entries = z;
+		ma->entries = (nx) ? flint_calloc(nx, sizeof(arb_t)) : 0;
+		if (op == 64 || op == 65)
+		switch (uplo) {
+		case 'N':
+			for (ja = 0; ja < nx; ++ja)
+				arb_set(ma->entries + ja, x + ja);
+			break;
+		case 'U':
+			ja = 0;
+			for (i = 0; i < ma->r; ++i) {
+				for (j = 0; j <= i; ++j, ++ja)
+					arb_set(ma->entries + ja, x + ja);
+				for (; j < ma->c; ++j, ++ja)
+					arb_zero(ma->entries + ja);
+			}
+			break;
+		case 'L':
+			ja = 0;
+			for (i = 0; i < ma->r; ++i) {
+				for (j = 0; j < i; ++j, ++ja)
+					arb_zero(ma->entries + ja);
+				for (; j < ma->c; ++j, ++ja)
+					arb_set(ma->entries + ja, x + ja);
+			}
+			break;
+		}
+		else
+		switch (uplo) {
+		case 'N':
+			ja = jx = 0;
+			for (i = 0; i < ma->r; ++i, jx -= nx - 1)
+				for (j = 0; j < ma->c; ++j, ++ja, jx += ma->r)
+					arb_set(ma->entries + ja, x + jx);
+			break;
+		case 'U':
+			ja = jx = 0;
+			for (i = 0; i < ma->r; ++i) {
+				for (j = 0; j < i; ++j, ++ja)
+					arb_zero(ma->entries + ja);
+				jx = ja;
+				for (; j < ma->c; ++j, ++ja, jx += ma->r)
+					arb_set(ma->entries + ja, x + jx);
+			}
+			break;
+		case 'L':
+			ja = jx = 0;
+			for (i = 0; i < ma->r; ++i) {
+				jx = ja;
+				for (j = 0; j <= i; ++j, ++ja, jx += ma->r)
+					arb_set(ma->entries + ja, x + jx);
+				for (; j < ma->c; ++j, ++ja)
+					arb_zero(ma->entries + ja);
+			}
+			break;
+		}
+#ifndef HAVE_FMPZ_MAT_STRUCT_STRIDE
+		mc->rows = (mc->r) ? flint_calloc((size_t) mc->r, sizeof(arb_ptr)) : 0;
+		ma->rows = (ma->r) ? flint_calloc((size_t) ma->r, sizeof(arb_ptr)) : 0;
+		if (mc->r) {
+			mc->rows[0] = mc->entries;
+			for (i = 1; i < mc->r; ++i)
+				mc->rows[i] = mc->rows[i - 1] + mc->c;
+		}
+		if (ma->r) {
+			ma->rows[0] = ma->entries;
+			for (i = 1; i < ma->r; ++i)
+				ma->rows[i] = ma->rows[i - 1] + ma->c;
+		}
+#else
+		mc->stride = mc->c;
+		ma->stride = ma->c;
+#endif
+		singular = !arb_mat_inv(mc, ma, prec);
+		for (ja = 0; ja < nx; ++ja)
+			arb_clear(ma->entries + ja);
+		flint_free(ma->entries);
+#ifndef HAVE_FMPZ_MAT_STRUCT_STRIDE
+		flint_free(mc->rows);
+		flint_free(ma->rows);
+#endif
+		if (singular)
+			Rf_error(_("matrix is exactly singular or precision is insufficient"));
+		R_do_slot_assign(ans, R_flint_symbol_dim, dimz);
+		SEXP dimnamesx = R_do_slot(s_x, R_flint_symbol_dimnames),
+			dimnamesz = R_NilValue;
+		if (dimnamesx != R_NilValue) {
+			PROTECT(dimnamesx);
+			PROTECT(dimnamesz = Rf_allocVector(VECSXP, 2));
+			SET_VECTOR_ELT(dimnamesz, 0, VECTOR_ELT(dimnamesx, 1));
+			SET_VECTOR_ELT(dimnamesz, 1, VECTOR_ELT(dimnamesx, 0));
+			SEXP namesdimnamesx = Rf_getAttrib(dimnamesx, R_NamesSymbol),
+				namesdimnamesz = R_NilValue;
+			if (namesdimnamesx != R_NilValue) {
+				PROTECT(namesdimnamesx);
+				PROTECT(namesdimnamesz = Rf_allocVector(STRSXP, 2));
+				SET_STRING_ELT(namesdimnamesz, 0, STRING_ELT(namesdimnamesx, 1));
+				SET_STRING_ELT(namesdimnamesz, 1, STRING_ELT(namesdimnamesx, 0));
+				Rf_setAttrib(dimnamesz, R_NamesSymbol, namesdimnamesz);
+				UNPROTECT(2);
+			}
+			R_do_slot_assign(ans, R_flint_symbol_dimnames, dimnamesz);
+			UNPROTECT(2);
+		}
+		UNPROTECT(2);
+		return ans;
+	}
+	case 67: /*   "chol2inv" */
+	{
+		SEXP dimz = PROTECT(R_do_slot(s_x, R_flint_symbol_dim));
+		const int *dz = 0;
+		if (dimz == R_NilValue || XLENGTH(dimz) != 2 ||
+		    (dz = INTEGER_RO(dimz), dz[0] != dz[1]))
+			Rf_error(_("'%s' is not a square matrix"),
+			         "x");
+		SEXP ans = PROTECT(newObject("arb"));
+		arb_ptr z = (nz) ? flint_calloc(nz, sizeof(arb_t)) : 0;
+		R_flint_set(ans, z, nz, (R_CFinalizer_t) &R_flint_arb_finalize);
+		arb_mat_t mc, ma;
+		mc->r = mc->c = ma->r = ma->c = dz[0];
+		mc->entries = z;
+		ma->entries = (void *) x;
+#ifndef HAVE_FMPZ_MAT_STRUCT_STRIDE
+		int i;
+		mc->rows = (mc->r) ? flint_calloc((size_t) mc->r, sizeof(arb_ptr)) : 0;
+		ma->rows = (ma->r) ? flint_calloc((size_t) ma->r, sizeof(arb_ptr)) : 0;
+		if (mc->r) {
+			mc->rows[0] = mc->entries;
+			for (i = 1; i < mc->r; ++i)
+				mc->rows[i] = mc->rows[i - 1] + mc->c;
+		}
+		if (ma->r) {
+			ma->rows[0] = ma->entries;
+			for (i = 1; i < ma->r; ++i)
+				ma->rows[i] = ma->rows[i - 1] + ma->c;
+		}
+#else
+		mc->stride = mc->c;
+		ma->stride = ma->c;
+#endif
+		arb_mat_inv_cho_precomp(mc, ma, prec);
+#ifndef HAVE_FMPZ_MAT_STRUCT_STRIDE
+		flint_free(mc->rows);
+		flint_free(ma->rows);
+#endif
+		R_do_slot_assign(ans, R_flint_symbol_dim, dimz);
+		SEXP dimnamesx = PROTECT(R_do_slot(s_x, R_flint_symbol_dimnames)),
+			dimnamesz = R_NilValue;
+		SEXP namesdimnamesx = PROTECT(Rf_getAttrib(dimnamesx, R_NamesSymbol)),
+			namesdimnamesz = R_NilValue;
+		if (dimnamesx != R_NilValue &&
+		    (VECTOR_ELT(dimnamesx, 1) != R_NilValue || namesdimnamesx != R_NilValue)) {
+			PROTECT(dimnamesz = Rf_allocVector(VECSXP, 2));
+			SET_VECTOR_ELT(dimnamesz, 0, VECTOR_ELT(dimnamesx, 1));
+			SET_VECTOR_ELT(dimnamesz, 1, VECTOR_ELT(dimnamesx, 1));
+			if (namesdimnamesx != R_NilValue) {
+				PROTECT(namesdimnamesz = Rf_allocVector(STRSXP, 2));
+				SET_STRING_ELT(namesdimnamesz, 0, STRING_ELT(namesdimnamesx, 1));
+				SET_STRING_ELT(namesdimnamesz, 1, STRING_ELT(namesdimnamesx, 1));
+				Rf_setAttrib(dimnamesz, R_NamesSymbol, namesdimnamesz);
+				UNPROTECT(1);
+			}
+			R_do_slot_assign(ans, R_flint_symbol_dimnames, dimnamesz);
+			UNPROTECT(1);
+		}
+		UNPROTECT(4);
+		return ans;
+	}
+	case 68: /*       "chol" */
+	{
+		SEXP dimz = PROTECT(R_do_slot(s_x, R_flint_symbol_dim));
+		const int *dz = 0;
+		if (dimz == R_NilValue || XLENGTH(dimz) != 2 ||
+		    (dz = INTEGER_RO(dimz), dz[0] != dz[1]))
+			Rf_error(_("'%s' is not a square matrix"),
+			         "x");
+		SEXP ans = PROTECT(newObject("arb"));
+		arb_ptr z = (nz) ? flint_calloc(nz, sizeof(arb_t)) : 0;
+		R_flint_set(ans, z, nz, (R_CFinalizer_t) &R_flint_arb_finalize);
+		int posdef;
+		arb_mat_t mc, ma;
+		mc->r = mc->c = ma->r = ma->c = dz[0];
+		mc->entries = z;
+		ma->entries = (arb_ptr) x;
+#ifndef HAVE_FMPZ_MAT_STRUCT_STRIDE
+		int i;
+		mc->rows = (mc->r) ? flint_calloc((size_t) mc->r, sizeof(arb_ptr)) : 0;
+		ma->rows = (ma->r) ? flint_calloc((size_t) ma->r, sizeof(arb_ptr)) : 0;
+		if (mc->r) {
+			mc->rows[0] = mc->entries;
+			for (i = 1; i < mc->r; ++i)
+				mc->rows[i] = mc->rows[i - 1] + mc->c;
+		}
+		if (ma->r) {
+			ma->rows[0] = ma->entries;
+			for (i = 1; i < ma->r; ++i)
+				ma->rows[i] = ma->rows[i - 1] + ma->c;
+		}
+#else
+		mc->stride = mc->c;
+		ma->stride = ma->c;
+#endif
+		posdef = arb_mat_cho(mc, ma, prec);
+#ifndef HAVE_FMPZ_MAT_STRUCT_STRIDE
+		flint_free(mc->rows);
+		flint_free(ma->rows);
+#endif
+		if (!posdef)
+			Rf_error(_("matrix is not positive definite or precision is insufficient"));
+		R_do_slot_assign(ans, R_flint_symbol_dim, dimz);
+		SEXP dimnamesx = PROTECT(R_do_slot(s_x, R_flint_symbol_dimnames)),
+			dimnamesz = R_NilValue;
+		SEXP namesdimnamesx = PROTECT(Rf_getAttrib(dimnamesx, R_NamesSymbol)),
+			namesdimnamesz = R_NilValue;
+		if (dimnamesx != R_NilValue &&
+		    (VECTOR_ELT(dimnamesx, 1) != R_NilValue || namesdimnamesx != R_NilValue)) {
+			PROTECT(dimnamesz = Rf_allocVector(VECSXP, 2));
+			SET_VECTOR_ELT(dimnamesz, 1, VECTOR_ELT(dimnamesx, 1));
+			if (namesdimnamesx != R_NilValue) {
+				PROTECT(namesdimnamesz = Rf_allocVector(STRSXP, 2));
+				SET_STRING_ELT(namesdimnamesz, 1, STRING_ELT(namesdimnamesx, 1));
+				Rf_setAttrib(dimnamesz, R_NamesSymbol, namesdimnamesz);
+				UNPROTECT(1);
+			}
+			R_do_slot_assign(ans, R_flint_symbol_dimnames, dimnamesz);
+			UNPROTECT(1);
+		}
+		UNPROTECT(4);
+		return ans;
+	}
+	case 69: /*        "det" */
+	{
+		SEXP dimx = PROTECT(R_do_slot(s_x, R_flint_symbol_dim));
+		const int *dx = 0;
+		if (dimx == R_NilValue || XLENGTH(dimx) != 2 ||
+		    (dx = INTEGER_RO(dimx), dx[0] != dx[1]))
+			Rf_error(_("'%s' is not a square matrix"),
+			         "x");
+		SEXP ans = PROTECT(newObject("arb"));
+		arb_ptr z = flint_calloc(1, sizeof(arb_t));
+		R_flint_set(ans, z, 1, (R_CFinalizer_t) &R_flint_arb_finalize);
+		arb_mat_t mx;
+		mx->r = mx->c = dx[0];
+		mx->entries = (void *) x;
+#ifndef HAVE_FMPZ_MAT_STRUCT_STRIDE
+		int i;
+		mx->rows = (mx->r) ? flint_calloc((size_t) mx->r, sizeof(arb_ptr)) : 0;
+		mx->rows[0] = mx->entries;
+		for (i = 1; i < mx->r; ++i)
+			mx->rows[i] = mx->rows[i - 1] + mx->c;
+#else
+		mx->stride = mx->c;
+#endif
+		arb_mat_det(z, mx, prec);
+#ifndef HAVE_FMPZ_MAT_STRUCT_STRIDE
+		flint_free(mx->rows);
+#endif
+		UNPROTECT(2);
+		return ans;
+	}
 	default:
-		Rf_error(_("operation '%s' is not yet implemented for class '%s'"),
+		Rf_error(_("operation '%s' is not yet implemented for class \"%s\""),
 		         CHAR(STRING_ELT(s_op, 0)), "arb");
 		return R_NilValue;
 	}
-#undef COMMON
 }

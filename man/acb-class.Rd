@@ -1,8 +1,19 @@
 \name{acb-class}
 \alias{acb-class}
 \alias{acb}
-\alias{.acb}
+\alias{acb.array}
 \alias{!,acb-method}
+\alias{\%*\%,ANY,acb-method}
+\alias{\%*\%,acb,ANY-method}
+\alias{\%*\%,acb,ulong-method}
+\alias{\%*\%,acb,slong-method}
+\alias{\%*\%,acb,fmpz-method}
+\alias{\%*\%,acb,fmpq-method}
+\alias{\%*\%,acb,mag-method}
+\alias{\%*\%,acb,arf-method}
+\alias{\%*\%,acb,acf-method}
+\alias{\%*\%,acb,arb-method}
+\alias{\%*\%,acb,acb-method}
 \alias{+,acb,missing-method}
 \alias{-,acb,missing-method}
 \alias{Complex,acb-method}
@@ -22,8 +33,35 @@
 \alias{Summary,acb-method}
 \alias{anyNA,acb-method}
 \alias{as.vector,acb-method}
+\alias{backsolve,ANY,acb-method}
+\alias{backsolve,acb,ANY-method}
+\alias{backsolve,acb,ulong-method}
+\alias{backsolve,acb,slong-method}
+\alias{backsolve,acb,fmpz-method}
+\alias{backsolve,acb,fmpq-method}
+\alias{backsolve,acb,mag-method}
+\alias{backsolve,acb,arf-method}
+\alias{backsolve,acb,acf-method}
+\alias{backsolve,acb,arb-method}
+\alias{backsolve,acb,acb-method}
+\alias{chol,acb-method}
+\alias{chol2inv,acb-method}
 \alias{coerce,ANY,acb-method}
-\alias{initialize,acb-method}
+\alias{colMeans,acb-method}
+\alias{colSums,acb-method}
+\alias{crossprod,ANY,acb-method}
+\alias{crossprod,acb,ANY-method}
+\alias{crossprod,acb,ulong-method}
+\alias{crossprod,acb,slong-method}
+\alias{crossprod,acb,fmpz-method}
+\alias{crossprod,acb,fmpq-method}
+\alias{crossprod,acb,mag-method}
+\alias{crossprod,acb,arf-method}
+\alias{crossprod,acb,acf-method}
+\alias{crossprod,acb,arb-method}
+\alias{crossprod,acb,acb-method}
+\alias{det,acb-method}
+\alias{determinant,acb-method}
 \alias{is.finite,acb-method}
 \alias{is.infinite,acb-method}
 \alias{is.na,acb-method}
@@ -31,6 +69,30 @@
 \alias{is.unsorted,acb-method}
 \alias{log,acb-method}
 \alias{mean,acb-method}
+\alias{rowMeans,acb-method}
+\alias{rowSums,acb-method}
+\alias{solve,ANY,acb-method}
+\alias{solve,acb,ANY-method}
+\alias{solve,acb,ulong-method}
+\alias{solve,acb,slong-method}
+\alias{solve,acb,fmpz-method}
+\alias{solve,acb,fmpq-method}
+\alias{solve,acb,mag-method}
+\alias{solve,acb,arf-method}
+\alias{solve,acb,acf-method}
+\alias{solve,acb,arb-method}
+\alias{solve,acb,acb-method}
+\alias{tcrossprod,ANY,acb-method}
+\alias{tcrossprod,acb,ANY-method}
+\alias{tcrossprod,acb,ulong-method}
+\alias{tcrossprod,acb,slong-method}
+\alias{tcrossprod,acb,fmpz-method}
+\alias{tcrossprod,acb,fmpq-method}
+\alias{tcrossprod,acb,mag-method}
+\alias{tcrossprod,acb,arf-method}
+\alias{tcrossprod,acb,acf-method}
+\alias{tcrossprod,acb,arb-method}
+\alias{tcrossprod,acb,acb-method}
 \alias{xtfrm,acb-method}
 \docType{class}
 \title{Arbitrary Precision Floating-Point Complex Numbers with Error Bounds}
@@ -44,30 +106,98 @@
   radius.
 }
 \usage{
-## The class generator function:
-.acb(\dots)
+## Class generator functions
 
-## Mode 1: initialize with zeros
-## .acb(length = 0L)
-##
-## Mode 2: initialize with vector
-## .acb(length = length(x), x)
-##
-## Mode 3: initialize by parts
-## .acb(length = max0(length(real), length(imag)), real, imag)
-##
-## where max0 <- function(m, n) if (min(m, n)) max(m, n) else 0L
+acb(x = 0i, length = 0L, names = NULL, real = 0, imag = 0)
+
+acb.array(x = 0i, dim = length(x), dimnames = NULL, real = 0, imag = 0)
 }
 \arguments{
-  \item{\dots}{
-    arguments passed to methods for \code{\link{initialize}}.}
+  \item{x}{
+    an atomic or \code{\linkS4class{flint}} vector containing data for
+    conversion to \code{acb}.}
+  \item{length}{
+    a numeric vector of length one giving the length of the return
+    value.  If that exceeds the length of \code{x}, then \code{x} is
+    recycled.  Non-integer values are rounded in the direction of zero.}
+  \item{names}{
+    the \code{names} slot of the return value, either \code{NULL} or a
+    character vector of equal length.  Non-character \code{names} are
+    coerced to character.}
+  \item{dim}{
+    the \code{dim} slot of the return value, an integer vector of
+    nonzero length.  If the product exceeds the length of \code{x}, then
+    \code{x} is recycled.  Non-integer numeric \code{dim} are coerced to
+    integer.}
+  \item{dimnames}{
+    the \code{dimnames} slot of the return value, either \code{NULL} or
+    a list of length equal to the length of \code{dim}.  The components
+    are either \code{NULL} or character vectors of length given by
+    \code{dim}.  Non-character vector components of \code{dimnames} are
+    coerced to character.}
+  \item{real, imag}{
+    atomic or \code{\linkS4class{flint}} vectors containing data for
+    conversion to \code{\linkS4class{arb}}.  Use these for
+    initialization \dQuote{by parts} (real and imaginary).}
 }
 \value{
-  The class generator function returns \code{\link{new}("acb", \dots)}.
+  An \code{acb} vector, possibly an array; see \sQuote{Details}.
+}
+\details{
+  The class generator function has six distinct usages:
+  \preformatted{acb()
+acb(length=)
+acb(x)
+acb(x, length=)
+acb(real=, imag=)
+acb(real=, imag=, length=)}
+  The first usage generates an empty vector.  The second usage generates
+  a zero vector of the indicated length.  The third usage converts
+  \code{x}, preserving dimensions, dimension names, and names.  The
+  fourth usage converts \code{x}, recycling its elements to the
+  indicated length and discarding its dimensions, dimension names, and
+  names.  The fifth and sixth usages, in which either of \code{real} and
+  \code{imag} can be missing, use \code{\link{arb}(real)} and
+  \code{\link{arb}(imag)} to separately initialize the real and
+  imaginary parts of the \code{acb} return value.
+
+  Attempts to recycle \code{real}, \code{imag}, or \code{x} of length
+  zero to nonzero length are an error.
+
+  Usage of \code{acb.array} is modelled after \code{\link{array}}.
+}
+\section{Conversion}{
+  Real numbers and real and imaginary parts of complex numbers are
+  rounded according to the default precision and rounding mode set by
+  \code{\link{flintPrec}} and \code{\link{flintRnd}}.  Ball midpoints
+  are the numbers obtained by rounding.  Ball radii are upper bounds on
+  the absolute errors incurred by rounding.
+
+  Character strings are scanned first for a real part then for an
+  imaginary part.  They can use any of three formats:
+  \code{"\var{s}\var{a}"}, \code{"\var{t}\var{b}i"}, and
+  \code{"\var{s}\var{a}\var{t}\var{b}i"}, where, recursively, each of
+  \code{\var{a}} and \code{\var{b}} have the format
+  \code{"(\var{k}\var{m}+/-\var{r})"}, defining a ball for each of the
+  real and imaginary parts.  \code{\var{k}} and \code{\var{m}} define
+  the sign and absolute value of the signed ball midpoints, and
+  \code{\var{r}} defines the unsigned ball radii.  \code{\var{k}} can
+  be empty if the ball midpoint is \code{NaN} or non-negative.
+  \code{\var{s}} and \code{\var{t}} are unary or binary plus or minus
+  to be reconciled with \code{\var{k}}; they are optional except in the
+  third format where \code{\var{t}} is mandatory.
+
+  The sequences \code{\var{k}\var{m}} and \code{\var{r}} are converted
+  using function \code{mpfr_strtofr} from the \acronym{GNU}
+  \acronym{MPFR} library with argument \code{base} set to 0 and argument
+  \code{rnd} set according to the default rounding mode (for the
+  midpoint, whereas the radius is always rounded towards \code{Inf});
+  see
+  \url{https://www.mpfr.org/mpfr-current/mpfr.html#Assignment-Functions}.
 }
 \section{Slots}{
   \describe{
-    \item{\code{.xData}, \code{names}}{
+    \item{\code{.xData}, \code{dim}, \code{dimnames}, \code{names}}{
       inherited from virtual class \code{\linkS4class{flint}}.}
   }
 }
@@ -80,6 +210,17 @@
     \item{\code{!}}{
       \code{signature(x = "acb")}:\cr
       equivalent to (but faster than) \code{x == 0}.}
+    \item{\code{\%*\%}, \code{crossprod}, \code{tcrossprod}}{
+      \code{signature(x = "acb", y = "acb")}:\cr
+      \code{signature(x = "acb", y = "ANY")}:\cr
+      \code{signature(x = "ANY", y = "acb")}:\cr
+      matrix products.  The \dQuote{other} operand must be atomic or
+      inherit from virtual class \code{\linkS4class{flint}}.
+      \code{crossprod} and \code{tcrossprod} behave as if \code{y = x}
+      when \code{y} is missing or \code{NULL}.  Operands are promoted as
+      necessary and must be conformable (have compatible dimensions).
+      Non-array operands of length \code{k} are handled as 1-by-\code{k}
+      or \code{k}-by-1 matrices depending on the call.}
     \item{\code{+}}{
       \code{signature(e1 = "acb", e2 = "missing")}:\cr
       returns a copy of the argument.}
@@ -102,13 +243,15 @@
       \code{\link[methods]{S4groupGeneric}}.  There are just two member
       member functions: \code{\link{round}}, \code{\link{signif}}.}
     \item{\code{Ops}}{
-      \code{signature(e1 = "ANY", e2 = "acb")}:\cr
+      \code{signature(e1 = "acb", e2 = "acb")}:\cr
       \code{signature(e1 = "acb", e2 = "ANY")}:\cr
+      \code{signature(e1 = "ANY", e2 = "acb")}:\cr
       binary arithmetic, comparison, and logical operators; see
       \code{\link[methods]{S4groupGeneric}}.  The \dQuote{other} operand
       must be atomic or inherit from virtual class
-      \code{\linkS4class{flint}}.  The operands are recycled and
-      promoted as necessary.}
+      \code{\linkS4class{flint}}.  Operands are promoted as necessary.
+      Array operands must be conformable (have identical dimensions).
+      Non-array operands are recycled.}
     \item{\code{Summary}}{
       \code{signature(x = "acb")}:\cr
       univariate summary statistics; see
@@ -134,36 +277,58 @@
       introduced with a warning.  Coercion to types \code{"character"},
       \code{"symbol"} (synonym \code{"name"}), \code{"pairlist"},
       \code{"list"}, and \code{"expression"}, which are not
-      \dQuote{number-like}, is handled specially.}
+      \dQuote{number-like}, is handled specially.  See also
+      \code{\link{asVector}}.}
+    \item{\code{backsolve}}{
+      \code{signature(r = "acb", x = "acb")}:\cr
+      \code{signature(r = "acb", x = "ANY")}:\cr
+      \code{signature(r = "ANY", x = "acb")}:\cr
+      solution of the triangular system \code{op2(op1(r)) \%*\% y = x},
+      where \code{op1=ifelse(upper.tri, triu, tril)} and
+      \code{op2=ifelse(transpose, t, identity)} and \code{upper.tri}
+      and \code{transpose} are optional logical arguments with default
+      values \code{TRUE} and \code{FALSE}, respectively.  The
+      \dQuote{other} operand must be atomic or inherit from virtual
+      class \code{\linkS4class{flint}}.  If \code{x} is missing, then
+      the return value is the inverse of \code{op2(op1(r))}, as if
+      \code{x} were the identity matrix.  Operands are promoted as
+      necessary and must be conformable (have compatible dimensions).
+      Non-array \code{x} are handled as \code{length(x)}-by-1 matrices.}
+    \item{\code{chol}}{
+      \code{signature(x = "acb")}:\cr
+      returns the upper triangular Cholesky factor of the positive
+      definite matrix whose upper triangular part is the upper
+      triangular part of \code{x} (discarding imaginary parts of
+      diagonal entries).}
+    \item{\code{chol2inv}}{
+      \code{signature(x = "acb")}:\cr
+      returns the inverse of the positive definite matrix whose upper
+      triangular Cholesky factor is the upper triangular part of
+      \code{x} (discarding imaginary parts of diagonal entries).}
     \item{\code{coerce}}{
       \code{signature(from = "ANY", to = "acb")}:\cr
-      returns \code{.acb(x = from)}.  An error is signaled if the class
-      or type of \code{from} is not supported by the method for
-      \code{\link{initialize}}.}
+      returns the value of \code{acb(from)}.}
+    \item{\code{colSums}, \code{colMeans}}{
+      \code{signature(x = "acb")}:\cr
+      returns an \code{acb} vector or array containing the column sums
+      or means of \code{x}, defined as sums or means over dimensions
+      \code{1:dims}.}
+    \item{\code{det}}{
+      \code{signature(x = "arb")}:\cr
+      returns the determinant of \code{x} as an \code{acb} vector of
+      length 1.}
+    \item{\code{determinant}}{
+      \code{signature(x = "acf")}:\cr
+      returns a list with components \code{modulus} and \code{argument}
+      specifying the determinant of \code{x}, following the \pkg{base}
+      function (except for the use of argument instead of sign), hence
+      \code{\link{determinant}}.}
     \item{\code{format}}{
       \code{signature(x = "acb")}:\cr
       returns a character vector suitable for printing, using string
       format \code{"(m +/- r)+(m +/- r)i"} and scientific format for
       each \code{m} and \code{r}.  Optional arguments control the
       output; see \code{\link{format-methods}}.}
-    \item{\code{initialize}}{
-      \code{signature(.Object = "acb", length = "\var{numeric}")}:\cr
-      returns \code{.Object} after setting its \code{.xData} slot.  The
-      new slot value is an external pointer to an array of the
-      corresponding \proglang{C} type, which is newly allocated and
-      initialized entirely with zeros (zero midpoint, zero radius in the
-      real and imaginary parts).  \code{.Object} is not copied, so all
-      references are affected.}
-    \item{\code{initialize}}{
-      \code{signature(.Object = "acb", length = "\var{numeric}", x = "\var{atomic|flint}")}:\cr
-      as above, except that the new slot value points to an array
-      initialized with values from \code{x}.}
-    \item{\code{initialize}}{
-      \code{signature(.Object = "acb", length = "\var{numeric}", real = "\var{atomic|flint}", imag = "\var{atomic|flint}")}:\cr
-      as above, except that the new slot value points to an array whose
-      real and imaginary parts are initialized separately with values
-      from \code{real} and \code{imag}, which are coerced to class
-      \code{\linkS4class{arb}} and recycled as necessary.}
     \item{\code{is.finite}}{
       \code{signature(x = "acb")}:\cr
       returns a logical vector indicating which elements of \code{x}
@@ -190,6 +355,22 @@
     \item{\code{mean}}{
       \code{signature(x = "acb")}:\cr
       returns the arithmetic mean.}
+    \item{\code{rowSums}, \code{rowMeans}}{
+      \code{signature(x = "acb")}:\cr
+      returns an \code{acb} vector or array containing the row sums or
+      means of \code{x}, defined as sums or means over dimensions
+      \code{(dims+1):length(dim(x))}.}
+    \item{\code{solve}}{
+      \code{signature(a = "acb", b = "acb")}:\cr
+      \code{signature(a = "acb", b = "ANY")}:\cr
+      \code{signature(a = "ANY", b = "acb")}:\cr
+      solution of the general system \code{a \%*\% x = b}.  The
+      \dQuote{other} operand must be atomic or inherit from virtual
+      class \code{\linkS4class{flint}}.  If \code{b} is missing, then
+      the return value is the inverse of \code{a}, as if \code{b} were
+      the identity matrix.  Operands are promoted as necessary and must
+      be conformable (have compatible dimensions).  Non-array \code{b}
+      are handled as \code{length(b)}-by-1 matrices.}
     \item{\code{xtfrm}}{
       \code{signature(x = "acb")}:\cr
       signals an error indicating that \code{<=} is not a total order

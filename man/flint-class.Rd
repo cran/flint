@@ -1,25 +1,53 @@
 \name{flint-class}
 \alias{flint-class}
-\alias{[,ANY,flint,missing,missing-method}
-\alias{[,flint,ANY,missing,missing-method}
-\alias{[,flint,flint,missing,missing-method}
-\alias{[<-,ANY,ANY,missing,flint-method}
-\alias{[<-,ANY,flint,missing,ANY-method}
-\alias{[<-,ANY,flint,missing,flint-method}
-\alias{[<-,flint,ANY,missing,ANY-method}
-\alias{[<-,flint,ANY,missing,flint-method}
-\alias{[<-,flint,flint,missing,ANY-method}
-\alias{[<-,flint,flint,missing,flint-method}
-\alias{[[,ANY,flint,missing-method}
-\alias{[[,flint,ANY,missing-method}
-\alias{[[,flint,flint,missing-method}
-\alias{[[<-,ANY,ANY,missing,flint-method}
-\alias{[[<-,ANY,flint,missing,ANY-method}
-\alias{[[<-,ANY,flint,missing,flint-method}
-\alias{[[<-,flint,ANY,missing,ANY-method}
-\alias{[[<-,flint,ANY,missing,flint-method}
-\alias{[[<-,flint,flint,missing,ANY-method}
-\alias{[[<-,flint,flint,missing,flint-method}
+\alias{flint}
+\alias{flint.array}
+\alias{$,flint-method}
+\alias{$<-,flint-method}
+\alias{[,ANY,ANY,flint-method}
+\alias{[,ANY,flint,ANY-method}
+\alias{[,ANY,flint,flint-method}
+\alias{[,flint,ANY,ANY-method}
+\alias{[,flint,ANY,flint-method}
+\alias{[,flint,flint,ANY-method}
+\alias{[,flint,flint,flint-method}
+\alias{[<-,ANY,ANY,ANY,flint-method}
+\alias{[<-,ANY,ANY,flint,ANY-method}
+\alias{[<-,ANY,ANY,flint,flint-method}
+\alias{[<-,ANY,flint,ANY,ANY-method}
+\alias{[<-,ANY,flint,ANY,flint-method}
+\alias{[<-,ANY,flint,flint,ANY-method}
+\alias{[<-,ANY,flint,flint,flint-method}
+\alias{[<-,flint,ANY,ANY,ANY-method}
+\alias{[<-,flint,ANY,ANY,flint-method}
+\alias{[<-,flint,ANY,flint,ANY-method}
+\alias{[<-,flint,ANY,flint,flint-method}
+\alias{[<-,flint,flint,ANY,ANY-method}
+\alias{[<-,flint,flint,ANY,flint-method}
+\alias{[<-,flint,flint,flint,ANY-method}
+\alias{[<-,flint,flint,flint,flint-method}
+\alias{[[,ANY,ANY,flint-method}
+\alias{[[,ANY,flint,ANY-method}
+\alias{[[,ANY,flint,flint-method}
+\alias{[[,flint,ANY,ANY-method}
+\alias{[[,flint,ANY,flint-method}
+\alias{[[,flint,flint,ANY-method}
+\alias{[[,flint,flint,flint-method}
+\alias{[[<-,ANY,ANY,ANY,flint-method}
+\alias{[[<-,ANY,ANY,flint,ANY-method}
+\alias{[[<-,ANY,ANY,flint,flint-method}
+\alias{[[<-,ANY,flint,ANY,ANY-method}
+\alias{[[<-,ANY,flint,ANY,flint-method}
+\alias{[[<-,ANY,flint,flint,ANY-method}
+\alias{[[<-,ANY,flint,flint,flint-method}
+\alias{[[<-,flint,ANY,ANY,ANY-method}
+\alias{[[<-,flint,ANY,ANY,flint-method}
+\alias{[[<-,flint,ANY,flint,ANY-method}
+\alias{[[<-,flint,ANY,flint,flint-method}
+\alias{[[<-,flint,flint,ANY,ANY-method}
+\alias{[[<-,flint,flint,ANY,flint-method}
+\alias{[[<-,flint,flint,flint,ANY-method}
+\alias{[[<-,flint,flint,flint,flint-method}
 \alias{anyDuplicated,flint-method}
 \alias{as.raw,flint-method}
 \alias{as.logical,flint-method}
@@ -37,11 +65,27 @@
 \alias{all.equal,flint,ANY-method}
 \alias{all.equal,flint,flint-method}
 \alias{c,flint-method}
+\alias{cbind2,ANY,flint-method}
+\alias{cbind2,flint,ANY-method}
+\alias{cbind2,flint,flint-method}
 \alias{coerce,ANY,flint-method}
 \alias{cut,flint-method}
+\alias{diag,flint-method}
+\alias{diag<-,flint-method}
+\alias{dim,flint-method}
+\alias{dim<-,flint,NULL-method}
+\alias{dim<-,flint,numeric-method}
+\alias{dimnames,flint-method}
+\alias{dimnames<-,flint,NULL-method}
+\alias{dimnames<-,flint,list-method}
+\alias{drop,flint-method}
 \alias{duplicated,flint-method}
 \alias{findInterval,flint-method}
+\alias{identical,flint,flint-method}
+\alias{is.array,flint-method}
+\alias{is.matrix,flint-method}
 \alias{is.na<-,flint-method}
+\alias{isSymmetric,flint-method}
 \alias{length,flint-method}
 \alias{length<-,flint-method}
 \alias{match,ANY,flint-method}
@@ -51,8 +95,12 @@
 \alias{names,flint-method}
 \alias{names<-,flint,NULL-method}
 \alias{names<-,flint,character-method}
+\alias{norm,flint,ANY-method}
 \alias{print,flint-method}
 \alias{quantile,flint-method}
+\alias{rbind2,ANY,flint-method}
+\alias{rbind2,flint,ANY-method}
+\alias{rbind2,flint,flint-method}
 \alias{rep,flint-method}
 \alias{rep.int,flint-method}
 \alias{rep_len,flint-method}
@@ -60,6 +108,7 @@
 \alias{sequence,flint-method}
 \alias{show,flint-method}
 \alias{summary,flint-method}
+\alias{t,flint-method}
 \alias{unique,flint-method}
 \docType{class}
 \title{Class of FLINT-Type Vectors}
@@ -68,6 +117,34 @@
   \acronym{FLINT} \proglang{C} type.  The \proglang{C} type is
   determined by the class attribute and interfaced exactly using \R{}'s
   external pointer type.
+}
+\usage{
+## Class generator functions
+
+flint(class, \dots)
+
+flint.array(class, \dots)
+}
+\arguments{
+  \item{class}{
+    a character string giving the name of a nonvirtual subclass of
+    \code{flint}, one of
+    \code{"\linkS4class{ulong}"}, \code{"\linkS4class{slong}"},
+    \code{"\linkS4class{fmpz}"}, \code{"\linkS4class{fmpq}"},
+    \code{"\linkS4class{mag}"},
+    \code{"\linkS4class{arf}"}, \code{"\linkS4class{acf}"},
+    \code{"\linkS4class{arb}"}, and \code{"\linkS4class{acb}"}.}
+  \item{\dots}{
+    arguments passed to the class generator function corresponding to
+    \code{class}.}
+}
+\value{
+  An object of class \code{class} generated by the corresponding class
+  generator function.  For example,
+  \code{flint("\linkS4class{ulong}", \dots)} returns
+  \code{\link{ulong}(\dots)} and
+  \code{flint.array("\linkS4class{slong}", \dots)} returns
+  \code{\link{slong.array}(\dots)}.
 }
 \section{Slots}{
   \describe{
@@ -84,84 +161,96 @@
       \code{.xData} (see \code{\link{reg.finalizer}}) to ensure that
       allocated memory is freed before \code{.xData} is itself freed by
       the garbage collector.}
+    \item{\code{dim}}{
+      either \code{NULL}, indicating that the object is not an array, or
+      an integer vector of length \code{d} greater than 0 and with
+      product equal to the object length, indicating that the object is
+      a \code{d}-dimensional array with dimensions \code{dim}.  Array
+      entries are stored in colexicographic order, meaning that the
+      first subscript moves fastest.}
+    \item{\code{dimnames}}{
+      either \code{NULL}, indicating that the object is not an array or
+      is an array whose dimensions are not named, or a list of length
+      \code{d} equal to \code{length(dim)} such that
+      \code{dimnames[[i]]} is either \code{NULL} or a character vector
+      of length \code{dim[[i]]}, for all \code{i} in \code{1L:d}.}
     \item{\code{names}}{
-      a character vector of length 0, indicating that the object is
-      unnamed, or of length equal to the object length.  A corollary is
-      that objects whose length exceeds the maximum length of a
-      character vector cannot have names.}
+      either \code{NULL}, indicating that the object is not named, or a
+      character vector of length equal to the object length.  A
+      corollary is that objects whose length exceeds the maximum length
+      of a character vector cannot have names.}
   }
 }
 \section{Methods}{
   \describe{
+    \item{\code{$}, \code{$<-}}{
+      \code{signature(x = "flint")}:\cr
+      signals an error as \code{x} is \dQuote{atomic-like} and in any
+      case not recursive or \code{NULL}.}
     \item{\code{[}}{
-      \code{signature(x = "ANY", i = "flint", j = "missing", drop = "missing")}:\cr
-      \code{signature(x = "flint", i = "ANY", j = "missing", drop = "missing")}:\cr
-      \code{signature(x = "flint", i = "flint", j = "missing", drop = "missing")}:\cr
-      return a traditional vector or a \code{flint} vector containing
-      the elements of \code{x} indexed by \code{i} (the
-      \dQuote{subscript}).  The subscript can be missing, \code{NULL},
-      logical, integer, double, character, \code{\linkS4class{ulong}},
-      \code{\linkS4class{slong}}, \code{\linkS4class{fmpz}}, or
-      \code{\linkS4class{fmpq}}.  Methods for signatures with
-      \code{x = "flint"} signal an error for \code{NA} and out of bounds
-      subscripts, as the \proglang{C} types interfaced by \code{flint}
-      vectors have no representation for missing values.  Note that
-      \code{\link{[}} does not perform S4 dispatch if its first
-      positional argument is not an S4 object.  If it is known that
-      \code{i} is a \code{flint} vector and not known whether \code{x}
-      is a \code{flint} vector, then consider programming defensively
-      by calling \code{\link{[}} as \code{`[`(i = i, x = x)} rather than
-      as \code{x[i]}.}
+      \code{signature(x = "flint", i = "ANY", j = "ANY")}:\cr
+      \code{signature(x = "ANY", i = "flint", j = "ANY")}:\cr
+      \code{signature(x = "ANY", i = "ANY", j = "flint")}:\cr
+      returns a traditional vector or \code{flint} vector containing the
+      elements of \code{x} indexed by \code{(i, j, \dots)} (the
+      \dQuote{subscript}).  The components of the subscript can be
+      missing, \code{NULL}, logical, integer, double, character,
+      \code{\linkS4class{ulong}}, \code{\linkS4class{slong}},
+      \code{\linkS4class{fmpz}}, or \code{\linkS4class{fmpq}}.  Methods
+      for signatures with \code{x = "flint"} signal an error for
+      \code{NA} and out of bounds subscripts, as the \proglang{C} types
+      interfaced by \code{flint} vectors have no representation for
+      missing values.  Note that \code{\link{[}} does not perform S4
+      dispatch if its first positional argument is not an S4 object.  If
+      it is known that \code{i} is a \code{flint} vector and not known
+      whether \code{x} is a \code{flint} vector, then one option is to
+      call \code{\link{[}} as \code{`[`(i = i, x = x)} rather than as
+      \code{x[i]}.  However, it is not guaranteed that such usage of
+      \code{[}, which is mostly undocumented, continues to work in
+      future versions of \R{}.}
     \item{\code{[<-}}{
-      \code{signature(x = "ANY", i = "ANY", j = "missing", value = "flint")}:\cr
-      \code{signature(x = "ANY", i = "flint", j = "missing", value = "ANY")}:\cr
-      \code{signature(x = "ANY", i = "flint", j = "missing", value = "flint")}:\cr
-      \code{signature(x = "flint", i = "ANY", j = "missing", value = "ANY")}:\cr
-      \code{signature(x = "flint", i = "ANY", j = "missing", value = "flint")}:\cr
-      \code{signature(x = "flint", i = "flint", j = "missing", value = "ANY")}:\cr
-      \code{signature(x = "flint", i = "flint", j = "missing", value = "flint")}:\cr
-      return the traditional vector or \code{flint} vector obtained by
-      replacing the elements of \code{x} indexed by \code{i} (the
-      \dQuote{subscript}) with elements of \code{value}, which are
-      recycled as necessary.  The subscript can be missing, \code{NULL},
-      logical, integer, double, character, \code{\linkS4class{ulong}},
-      \code{\linkS4class{slong}}, \code{\linkS4class{fmpz}}, or
-      \code{\linkS4class{fmpq}}.  The class of the return value is
-      determined following strict rules from the classes of \code{x} and
-      \code{value}, which are promoted to the value class as necessary.
-      If the value class is a subclass of \code{flint}, then an error is
-      signaled for \code{NA} and out of bounds subscripts, as the
-      \proglang{C} types interfaced by \code{flint} vectors have no
-      representation for missing values.  Note that \code{\link{[<-}}
-      does not perform S4 dispatch if its first positional argument is
-      not an S4 object.  If it is known that \code{i} is a \code{flint}
-      vector and not known whether \code{x} is a \code{flint} vector,
-      then consider calling \code{\link{[<-}} as
-      \code{`[`(i = i, x = x) <- value} rather than as
-      \code{x[i] <- value}.  If it known that \code{value} is a
-      \code{flint} vector and not known whether \code{x} or \code{i} is
-      a \code{flint} vector, then consider doing something like
-      \code{x <- `[<-`(value = value, x = x, i = i)}.}
+      \code{signature(x = "flint", i = "ANY", j = "ANY", value = "ANY")}:\cr
+      \code{signature(x = "ANY", i = "flint", j = "ANY", value = "ANY")}:\cr
+      \code{signature(x = "ANY", i = "ANY", j = "flint", value = "ANY")}:\cr
+      \code{signature(x = "ANY", i = "ANY", j = "ANY", value = "flint")}:\cr
+      returns the traditional vector or \code{flint} vector obtained by
+      replacing the elements of \code{x} indexed by \code{(i, j, \dots)}
+      (the \dQuote{subscript}) with elements of \code{value}, which are
+      recycled as necessary.  The components of the subscript can be
+      missing, \code{NULL}, logical, integer, double, character,
+      \code{\linkS4class{ulong}}, \code{\linkS4class{slong}},
+      \code{\linkS4class{fmpz}}, or \code{\linkS4class{fmpq}}.  The
+      class of the return value is determined following strict rules
+      from the classes of \code{x} and \code{value}, which are promoted
+      to the value class as necessary.  If the value class is a subclass
+      of \code{flint}, then an error is signaled for \code{NA} and out
+      of bounds subscripts, as the \proglang{C} types interfaced by
+      \code{flint} vectors have no representation for missing values.
+      Note that \code{\link{[<-}} does not perform S4 dispatch if its
+      first positional argument is not an S4 object.  If it is known
+      that \code{i} is a \code{flint} vector and not known whether
+      \code{x} is a \code{flint} vector, then one option is to call
+      \code{\link{[<-}} as \code{`[`(i = i, x = x) <- value} rather than
+      as \code{x[i] <- value}.  However, it is not guaranteed that such
+      usage of \code{[<-}, which is mostly undocumented, continues to
+      work in future versions of \R{}.}
     \item{\code{[[}}{
-      \code{signature(x = "ANY", i = "flint", j = "missing")}:\cr
-      \code{signature(x = "flint", i = "ANY", j = "missing")}:\cr
-      \code{signature(x = "flint", i = "flint", j = "missing")}:\cr
+      \code{signature(x = "flint", i = "ANY", j = "ANY")}:\cr
+      \code{signature(x = "ANY", i = "flint", j = "ANY")}:\cr
+      \code{signature(x = "ANY", i = "ANY", j = "flint")}:\cr
       similar to \code{[}, with differences as documented in
-      \code{\link{Extract}}.}
+      \code{\link{Extract}}, particularly for recursive \code{x}.}
     \item{\code{[[<-}}{
-      \code{signature(x = "ANY", i = "ANY", j = "missing", value = "flint")}:\cr
-      \code{signature(x = "ANY", i = "flint", j = "missing", value = "ANY")}:\cr
-      \code{signature(x = "ANY", i = "flint", j = "missing", value = "flint")}:\cr
-      \code{signature(x = "flint", i = "ANY", j = "missing", value = "ANY")}:\cr
-      \code{signature(x = "flint", i = "ANY", j = "missing", value = "flint")}:\cr
-      \code{signature(x = "flint", i = "flint", j = "missing", value = "ANY")}:\cr
-      \code{signature(x = "flint", i = "flint", j = "missing", value = "flint")}:\cr
+      \code{signature(x = "flint", i = "ANY", j = "ANY", value = "ANY")}:\cr
+      \code{signature(x = "ANY", i = "flint", j = "ANY", value = "ANY")}:\cr
+      \code{signature(x = "ANY", i = "ANY", j = "flint", value = "ANY")}:\cr
+      \code{signature(x = "ANY", i = "ANY", j = "ANY", value = "flint")}:\cr
       similar to \code{[<-}, with differences as documented in
-      \code{\link{Extract}}.}
+      \code{\link{Extract}}, particularly for recursive \code{x}.}
     \item{\code{all.equal}}{
-      \code{signature(x = "ANY", y = "flint")}:\cr
-      \code{signature(x = "flint", y = "ANY")}:\cr
       \code{signature(x = "flint", y = "flint")}:\cr
+      \code{signature(x = "flint", y = "ANY")}:\cr
+      \code{signature(x = "ANY", y = "flint")}:\cr
       returns either \code{TRUE}, indicating that there is no meaningful
       difference between \code{x} and \code{y}, or a character vector
       describing differences.  The implementation (including optional
@@ -170,8 +259,9 @@
       inheriting from different subclasses of virtual class \code{flint}
       and comparison with objects (typically atomic vectors) coercible
       to virtual class \code{flint} are supported with
-      \code{check.class = FALSE}.  See \code{\link{flintIdentical}} for
-      much stricter comparison of objects inheriting from \code{flint}.}
+      \code{check.class = FALSE}.  See the method for
+      \code{\link{identical}} for much stricter comparison of
+      \code{flint} objects.}
     \item{\code{anyDuplicated}}{
       \code{signature(x = "flint")}:\cr
       returns \code{anyDuplicated(mtfrm(x), \dots)}.}
@@ -184,18 +274,31 @@
       see also \code{\link{as.numeric}}, section \sQuote{S4 Methods}.}
     \item{\code{as.matrix}, \code{as.array}, \code{as.Date}, \code{as.POSIXct}, \code{as.POSIXlt}}{
       \code{signature(x = "flint")}:\cr
-      coerces the argument with \code{as.vector} and dispatches.}
+      coerces the argument with \code{as.vector}, restores dimensions,
+      dimension names, and names, and dispatches.  \code{as.matrix} and
+      \code{as.array} obtain the same result more efficiently.}
     \item{\code{as.data.frame}}{
       \code{signature(x = "flint")}:\cr
-      this method is a copy of \code{\link{as.data.frame.vector}}.  It
-      enables the construction of data frames containing \code{flint}
-      vectors using \code{as.data.frame} and functions that call it such
-      as \code{\link{data.frame}} and \code{\link{cbind.data.frame}}.}
+      behaves as \code{\link{as.data.frame.vector}},
+      \code{\link{as.data.frame.matrix}}, or
+      \code{\link{as.data.frame.array}}, depending on the length of the
+      \code{dim} slot.  It enables the construction of data frames
+      containing \code{flint} vectors using \code{as.data.frame} and
+      functions that call it such as \code{\link{data.frame}} and
+      \code{\link{cbind.data.frame}}.}
     \item{\code{c}}{
       \code{signature(x = "flint")}:\cr
       returns \code{\link{c.flint}(x, \dots)}, the concatenation of the
       arguments.  Function \code{c.flint} is exported to work around the
       fact that \code{\link{c}(x, \dots)} dispatches only on \code{x}.}
+    \item{\code{cbind2}}{
+      \code{signature(x = "flint", y = "flint")}:\cr
+      \code{signature(x = "flint", y = "ANY")}:\cr
+      \code{signature(x = "ANY", y = "flint")}:\cr
+      returns \code{\link{cbind.flint}(x, y, \dots)}, the horizontal
+      concatenation of \code{x} and \code{y}.  These methods are
+      dispatched by \code{\link{cbind}} in case of S3 dispatch
+      ambiguities; see \code{\link{cbind2}}.}
     \item{\code{coerce}}{
       \code{signature(from = "ANY", to = "flint")}:\cr
       coerces atomic (except character) vectors \code{from} to the most
@@ -209,6 +312,50 @@
       method for \code{\link{cut}} with argument \code{labels} set to
       \code{FALSE}, provided that \code{breaks} is sorted and no element
       of \code{x} is out of bounds.}
+    \item{\code{diag}}{
+      \code{signature(x = "flint")}:\cr
+      if \code{x} is a matrix, then returns a \code{flint} vector
+      containing the diagonal entries of \code{x}; otherwise, returns a
+      diagonal matrix with diagonal entries taken from \code{x}.
+      Optional arguments \code{nrow}, \code{ncol}, and \code{names} are
+      handled as by the \pkg{base} function, hence see
+      \code{\link{diag}}.}
+    \item{\code{diag<-}}{
+      \code{signature(x = "flint", value = "ANY")}:\cr
+      returns \code{x}, which must be a matrix, after setting its main
+      diagonal to \code{value}, whose length must be equal to 1 or the
+      length of \code{x}.  Arguments \code{x} and \code{value} are
+      coerced to a common class following the rules used for general
+      subassignment; see the methods for \code{[<-} and \code{[[<-}.}
+    \item{\code{dim}}{
+      \code{signature(x = "flint")}:\cr
+      returns the \code{dim} slot of \code{x}.}
+    \item{\code{dim<-}}{
+      \code{signature(x = "flint", value = "NULL")}:\cr
+      returns \code{x} with \code{dim} and \code{dimnames} slots set to
+      \code{NULL}.}
+    \item{\code{dim<-}}{
+      \code{signature(x = "flint", value = "numeric")}:\cr
+      returns \code{x} with \code{dim} slot set to \code{value} and
+      \code{dimnames} slot set to \code{NULL}.  \code{value} of double
+      type is coerced to integer.}
+    \item{\code{dimnames}}{
+      \code{signature(x = "flint")}:\cr
+      returns the \code{dimnames} slot of \code{x}.}
+    \item{\code{dimnames<-}}{
+      \code{signature(x = "flint", value = "NULL")}:\cr
+      returns \code{x} with \code{dimnames} slot set to \code{NULL}.}
+    \item{\code{dimnames<-}}{
+      \code{signature(x = "flint", value = "list")}:\cr
+      returns \code{x} with \code{dimnames} slot set to \code{value}.
+      Elements of \code{value} of a vector type are coerced to character
+      using \code{as.character.default}.  Exceptionally, factors are
+      coerced to character using \code{as.character.factor}.}
+    \item{\code{drop}}{
+      \code{signature(x = "flint")}:\cr
+      returns \code{x} with \code{dim}, \code{dimnames}, and
+      \code{names} slots modified following the documented behaviour of
+      the \pkg{base} function, hence see \code{\link{drop}}.}
     \item{\code{duplicated}}{
       \code{signature(x = "flint")}:\cr
       returns \code{duplicated(mtfrm(x), \dots)}.}
@@ -219,11 +366,36 @@
       caveat is that an error is signaled if \code{x} contains
       \code{NaN}, because \code{ulong} has no representation for \R{}'s
       missing value \code{\link{NA_integer_}}.}
+    \item{\code{identical}}{
+      \code{signature(x = "flint", y = "flint")}:\cr
+      returns a logical indicating if \code{x} and \code{y} are
+      \dQuote{exactly equal}.  Compared to the default method (which is
+      the \pkg{base} function, hence see \code{\link{identical}}), this
+      method handles the \code{.xData} slots of \code{x} and \code{y}
+      specially: by default (if \code{extptr.as.ref} is \code{FALSE}),
+      it does not test for equality of the stored pointers but rather
+      for entrywise equality of the \emph{pointed to} arrays.  Hence by
+      default the \code{.xData} slots are compared as if they were
+      traditional numeric or complex vectors.}
+    \item{\code{is.array}}{
+      \code{signature(x = "flint")}:\cr
+      returns a logical indicating if \code{x} has a non-\code{NULL}
+      \code{dim} slot.}
+    \item{\code{is.matrix}}{
+      \code{signature(x = "flint")}:\cr
+      returns a logical indicating if \code{x} has a \code{dim} slot of
+      length 2.}
     \item{\code{is.na<-}}{
       \code{signature(x = "flint")}:\cr
       returns the value of \code{x} after \code{x[value] <- \var{na}},
       where \code{\var{na}} is an \code{\link{NA}} of integer, double,
       or complex type, depending on the class of \code{x}.}
+    \item{\code{isSymmetric}}{
+      \code{signature(x = "flint")}:\cr
+      returns a logical indicating if \code{x} is a Hermitian matrix or
+      if \code{x} is a symmetric matrix, depending on optional argument
+      \code{trans}, following the documented behaviour of the S3 method
+      for traditional matrices, hence see \code{\link{isSymmetric}}.}
     \item{\code{length}}{
       \code{signature(x = "flint")}:\cr
       returns \code{\link{flintLength}(x, exact = FALSE)}.}
@@ -234,9 +406,9 @@
       elements are copied from \code{x} and the remaining elements are
       initialized to zero.}
     \item{\code{match}}{
-      \code{signature(x = "ANY", table = "flint")}:\cr
-      \code{signature(x = "flint", table = "ANY")}:\cr
       \code{signature(x = "flint", table = "flint")}:\cr
+      \code{signature(x = "flint", table = "ANY")}:\cr
+      \code{signature(x = "ANY", table = "flint")}:\cr
       returns an integer vector matching \code{x} to \code{table} after
       coercing to a common class then \dQuote{match transforming} with
       \code{\link{mtfrm}}.  The behaviour is parallel to that of the
@@ -249,12 +421,10 @@
       the output); see also \code{\link{format-methods}}.}
     \item{\code{names}}{
       \code{signature(x = "flint")}:\cr
-      returns the value of the \code{names} slot or \code{NULL},
-      \code{NULL} if the \code{names} slot has zero length.}
+      returns the value of the \code{names} slot.}
     \item{\code{names<-}}{
       \code{signature(x = "flint", value = "NULL")}:\cr
-      returns \code{x} with \code{names} slot set to a character vector
-      of length zero.}
+      returns \code{x} with \code{names} slot set to \code{NULL}.}
     \item{\code{names<-}}{
       \code{signature(x = "flint", value = "character")}:\cr
       returns \code{x} with \code{names} slot set to \code{value}.
@@ -262,6 +432,11 @@
       \code{\link{NA_character_}} are appended to \code{value} if its
       length is less than the length of \code{x}.  An error is signaled
       if its length is greater.}
+    \item{\code{norm}}{
+      \code{signature(x = "flint")}:\cr
+      returns the matrix norm of \code{x} as a \code{flint} vector of
+      length 1.  The class of the return value can depend on the norm
+      type indicated by argument \code{type}; see \code{\link{norm}}.}
     \item{\code{print}}{
       \code{signature(x = "flint")}:\cr
       prints \code{\link{format}(x)} without quotes and returns \code{x}
@@ -282,6 +457,14 @@
       according to additional arguments \code{probs} and \code{type};
       see \code{\link{quantile}}.  Currently, an error is is signaled
       for \code{x} of length zero and \code{x} containing \code{NaN}.}
+    \item{\code{rbind2}}{
+      \code{signature(x = "flint", y = "flint")}:\cr
+      \code{signature(x = "flint", y = "ANY")}:\cr
+      \code{signature(x = "ANY", y = "flint")}:\cr
+      returns \code{\link{rbind.flint}(x, y, \dots)}, the vertical
+      concatenation of \code{x} and \code{y}.  These methods are
+      dispatched by \code{\link{rbind}} in case of S3 dispatch
+      ambiguities; see \code{\link{rbind2}}.}
     \item{\code{rep}}{
       \code{signature(x = "flint")}:\cr
       repeats \code{x} (or elements of \code{x}) according to optional
@@ -330,6 +513,10 @@ seq(to=, by=, length.out=)}
       from \code{\linkS4class{arb}} or \code{\linkS4class{acb}}) or
       optional argument \code{triple} is \code{TRUE}, in which case the
       value is just \code{\link{flintTriple}()} with names.}
+    \item{\code{t}}{
+      \code{signature(x = "flint")}:\cr
+      returns the transpose of \code{x} if \code{x} is a matrix,
+      handling non-array \code{x} as \code{length(x)}-by-1 matrices.}
     \item{\code{unique}}{
       \code{signature(x = "flint")}:\cr
       returns \code{x[!duplicated(x, \dots)]}.}

@@ -1,6 +1,139 @@
 \name{NEWS}
 \title{News for \R{} Package \pkg{flint}}
 \newcommand{\GH}{\href{https://github.com/jaganmn/flint/issues/#1}{GH##1}}
+\section{Changes in version 0.1.0 (2025-09-21)}{
+  \subsection{Description}{
+    \itemize{
+      \item Martin Maechler is a contributor.
+    }
+  }
+  \subsection{Significant User-Visible Changes}{
+    \itemize{
+      \item See section \sQuote{Classes} for backwards incompatible
+      changes to the definition of virtual class \code{flint}.
+
+      \item The class generator functions \code{.ulong}, \code{.slong},
+      \ldots are removed and replaced with pairs of class generator
+      functions \code{ulong}, \code{slong}, \ldots and
+      \code{ulong.array}, \code{slong.array}, \ldots with much nicer
+      usage; see, e.g., \code{help("ulong")} for details.
+
+      \item S4 methods for \code{initialize}, which were nonstandard by
+      virtue of not calling \code{callNextMethod} in order to dispatch
+      the default method, are removed in order to facilitate calls to
+      \code{new} by expert users wanting to set slots directly (rather
+      than indirectly through class generator functions) or wanting to
+      instantiate class extensions with additional slots, e.g.,
+      \code{new("ulongWithExtraSlot", \var{ulong}, extra = .)}.  Users
+      relying on the earlier behaviour of \code{new} should start using
+      the documented class generator functions.
+
+      \item \R{} function \code{flintIdentical} is removed and replaced
+      by an S4 method for made-generic function \code{identical}.
+    }
+  }
+  \subsection{Classes}{
+    \itemize{
+      \item Virtual class \code{flint} gains slots \code{dim} and
+      \code{dimnames}, enabling representation of arrays.  Methods for
+      \code{flint} and subclasses must handle these slots exactly as
+      default methods handle the so-named attributes of traditional
+      vectors.
+
+      \item Virtual class \code{flint} accepts \code{NULL} as a valid
+      value for its \code{names} slot.  \code{NULL} is used instead of
+      \code{character(0L)} to indicate that an object is unnamed.  Now
+      \code{character(0L)} is valid only for objects of length zero.
+
+      \item New classes \code{OptionalInteger}, \code{OptionalList}, and
+      \code{OptionalCharacter}, defined as unions of \code{NULL} and
+      \code{integer}, \code{list}, or \code{character}.  They are used
+      for slots \code{dim}, \code{dimnames}, and \code{names} of virtual
+      class \code{flint}.
+    }
+  }
+  \subsection{Methods}{
+    \itemize{
+      \item Many existing S4 methods are amended to handle changes in
+      the definition of virtual class \code{flint}, in particular to
+      handle arrays.  Notably, S4 methods for \code{[}, \code{[<-},
+      \code{[[}, and \code{[[<-} are refactored completely to support
+      array subscripts.
+
+      \item S4 methods are defined for generic (or made-generic)
+      functions \code{\%*\%}, \code{backsolve}, \code{cbind2},
+      \code{chol}, \code{chol2inv}, \code{colMeans}, \code{colSums},
+      \code{det}, \code{determinant}, \code{diag}, \code{diag<-},
+      \code{dim}, \code{dim<-}, \code{dimnames}, \code{dimnames<-},
+      \code{drop}, \code{is.array}, \code{is.matrix},
+      \code{isSymmetric}, \code{norm}, \code{rbind2}, \code{rowMeans},
+      \code{rowSums}, \code{solve}, \code{t}, and \code{tcrossprod}.
+      It is not a coindicence that these are all more or less
+      array-specific.
+
+      \item S3 methods are defined for S3-turned-S4 generic functions.
+      These methods call the S4 generic function so that S4 dispatch
+      occurs if the S3 generic function is called.
+
+      \item S4 methods are defined for generic functions \code{$} and
+      \code{$<-}, signaling an informative error.
+
+      \item An S4 method is defined for made-generic function
+      \code{identical} so that \code{.xData} slots are handled specially
+      when two \code{flint} objects are compared.
+    }
+  }
+  \subsection{New Features}{
+    \itemize{
+      \item \proglang{C} library functions
+      \code{arb_hypgeom_bessel_j}, \code{acb_hypgeom_bessel_j},
+      \code{arb_hypgeom_bessel_y}, \code{acb_hypgeom_bessel_y},
+      \code{arb_hypgeom_bessel_i}, \code{acb_hypgeom_bessel_i},
+      \code{arb_hypgeom_bessel_k}, and \code{acb_hypgeom_bessel_k},
+      which implement the Bessel and modified Bessel functions, are
+      interfaced as \R{} functions with identical names and prototypes.
+      Requested by Martin Maechler.
+
+      \item \R{} function \code{flintClass} for getting the name of the
+      direct nonvirtual subclass of virtual class \code{flint} from
+      which the argument inherits, e.g., \code{"ulong"} if the class of
+      the argument is \code{"ulong"} or \code{"ulongExtension"}.
+
+      \item \R{} function \code{asVector} for coercion to basic vector
+      classes and \code{flint} vector classes, optionally preserving
+      attributes (at least \code{dim}, \code{dimnames}, \code{names}).
+      It handles attributes more uniformly than \code{as.vector} and
+      \code{as}, which may or may not drop attributes depending on the
+      class of the argument and the target class.
+
+      \item \R{} functions \code{cbind.flint} and \code{rbind.flint},
+      similar in purpose to \code{c.flint}, enabling users to bypass
+      the internal dispatch mechanism of \code{cbind} and \code{rbind}.
+
+      \item It is now defined how \code{flintLength} and
+      \code{flintSize} handle arguments not inheriting from virtual
+      class \code{flint}.
+
+      \item \code{Mid} and \code{Mid<-} are implemented for class
+      \code{acb}, getting and setting the complex midpoint.  Thanks to
+      Martin Maechler for the suggestion and patch (\GH{15}).
+
+      \item S4 methods for \code{format} gain argument \code{digits.mag}
+      and use that instead of \code{digits} to format \code{mag} and
+      \code{mag} components of \code{arb} and \code{acb}.  The S4 method
+      for \code{print} gains the same argument, passing it to
+      \code{format}.
+    }
+  }
+  \subsection{Bug Fixes}{
+    \itemize{
+      \item Due to a copy-paste bug, \code{Mid(x) <- value} never worked
+      for \code{x} of class \code{arb} and \code{Imag(z) <- value}
+      never worked for \code{z} of class \code{acf} or \code{acb}.
+      Thanks to Martin Maechler for the report and patch (\GH{15}).
+    }
+  }
+}
 \section{Changes in version 0.0.5 (2025-05-27)}{
   \subsection{Installation}{
     \itemize{
@@ -202,16 +335,17 @@
   }
   \subsection{Methods}{
     \itemize{
-      \item S4 methods are defined for generic functions \code{[},
-      \code{[<-}, \code{[[}, \code{[[<-}, \code{Complex}, \code{Den},
-      \code{Den<-}, \code{Imag}, \code{Imag<-}, \code{Math},
-      \code{Math2}, \code{Mid}, \code{Mid<-}, \code{Num}, \code{Num<-},
-      \code{Ops}, \code{Rad}, \code{Rad<-}, \code{Real}, \code{Real<-},
-      \code{Summary}, \code{all.equal}, \code{anyDuplicated},
-      \code{anyNA}, \code{as.raw}, \code{as.logical}, \code{as.integer},
+      \item S4 methods are defined for generic (or made-generic)
+      functions \code{[}, \code{[<-}, \code{[[}, \code{[[<-},
+      \code{Complex}, \code{Den}, \code{Den<-}, \code{Imag},
+      \code{Imag<-}, \code{Math}, \code{Math2}, \code{Mid},
+      \code{Mid<-}, \code{Num}, \code{Num<-}, \code{Ops}, \code{Rad},
+      \code{Rad<-}, \code{Real}, \code{Real<-}, \code{Summary},
+      \code{all.equal}, \code{anyDuplicated}, \code{anyNA},
+      \code{as.raw}, \code{as.logical}, \code{as.integer},
       \code{as.numeric}, \code{as.complex}, \code{as.vector},
       \code{as.matrix}, \code{as.array}, \code{as.data.frame},
-      \code{as.Date}, \code{as.POSIXct}, \code{as.POSIXlt},
+      \code{as.Date}, \code{as.POSIXct}, \code{as.POSIXlt}, \code{c},
       \code{coerce}, \code{cut}, \code{duplicated}, \code{findInterval},
       \code{format}, \code{initialize}, \code{is.finite},
       \code{is.infinite}, \code{is.na}, \code{is.na<-}, \code{is.nan},
@@ -280,6 +414,11 @@
       \acronym{GNU} \acronym{MPFR}, and \acronym{GNU} \acronym{MP}.
       Header versions are determined at compile time.  Library versions
       are determined at run time.
+
+      \item \R{} function \code{c.flint}, the workhorse of the S4 method
+      for \code{c}.  It is exported to enable users to bypass the
+      internal dispatch mechanism of \code{c}, which dispatches on only
+      the first positional argument.
     }
   }
 }

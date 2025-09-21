@@ -30,6 +30,14 @@ function (x, tz = "", ...)
 function (x, tz = "", ...)
     as.POSIXlt(x, tz = tz, ...)
 
+.S3.chol.flint <-
+function (x, ...)
+    chol(x, ...)
+
+.S3.determinant.flint <-
+function (x, logarithm = TRUE, ...)
+    determinant(x, logarithm = logarithm, ...)
+
 .S3.duplicated.flint <-
 function (x, incomparables = FALSE, ...)
     duplicated(x, incomparables = incomparables, ...)
@@ -45,6 +53,10 @@ function (x, value)
 .S3.is.unsorted.flint <-
 function (x, na.rm = FALSE, strictly = FALSE)
     is.unsorted(x, na.rm = na.rm, strictly = strictly)
+
+.S3.isSymmetric.flint <-
+function (object, ...)
+    isSymmetric(object, ...)
 
 .S3.mean.flint <-
 function (x, ...)
@@ -78,9 +90,17 @@ function (...)
 function (nvec, ...)
     sequence(nvec, ...)
 
+.S3.solve.flint <-
+function (a, b, ...)
+    solve(a, b, ...)
+
 .S3.summary.flint <-
 function (object, ...)
     summary(object, ...)
+
+.S3.t.flint <-
+function (x)
+    t(x)
 
 .S3.unique.flint <-
 function (x, incomparables = FALSE, ...)
