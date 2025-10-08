@@ -34,7 +34,10 @@
 void R_flint_slong_finalize(SEXP x)
 {
 	slong *p = R_ExternalPtrAddr(x);
+	if (p) {
 	flint_free(p);
+	R_ClearExternalPtr(x);
+	}
 	return;
 }
 
@@ -1023,7 +1026,6 @@ SEXP R_flint_slong_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 		}
 		SEXP ans = PROTECT(newObject((over) ? "fmpz" : "slong"));
 		R_flint_set(ans, z, nz, (R_CFinalizer_t) ((over) ? &R_flint_fmpz_finalize : &R_flint_slong_finalize));
-		setDDNN1(ans, s_x);
 		UNPROTECT(1);
 		return ans;
 	}
@@ -1147,7 +1149,7 @@ SEXP R_flint_slong_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 		nz = 1;
 		for (k = 0; k < ndz; ++k)
 			nz *= (mp_limb_t) (dz[k] = dx[(byrow) ? k : off + k]);
-		mp_limb_t jt, nt = nx/nz;
+		mp_limb_t jt, nt = (nz == 0) ? 0 : nx/nz;
 
 		SEXP dimnamesx = R_do_slot(s_x, R_flint_symbol_dimnames),
 			dimnamesz = R_NilValue;

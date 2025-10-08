@@ -1,6 +1,7 @@
 #include "flint.h"
 
 SEXP R_flint_symbol_missing,
+	R_flint_symbol_dot_data,
 	R_flint_symbol_dot_xdata,
 	R_flint_symbol_dim,
 	R_flint_symbol_dimnames,
@@ -69,7 +70,11 @@ const char *R_flint_ops1[] =
 };
 
 SEXP R_flint_abi(void);
+SEXP R_flint_aperm(SEXP, SEXP, SEXP);
+SEXP R_flint_asplit(SEXP, SEXP, SEXP);
 SEXP R_flint_bind(SEXP, SEXP, SEXP, SEXP);
+SEXP R_flint_bits(SEXP);
+SEXP R_flint_bits_accurate(SEXP);
 SEXP R_flint_bits_per_limb(void);
 SEXP R_flint_class(SEXP);
 SEXP R_flint_diag(SEXP, SEXP, SEXP);
@@ -90,6 +95,13 @@ SEXP R_flint_transpose(SEXP, SEXP);
 SEXP R_flint_triple(SEXP);
 SEXP R_flint_valid(SEXP);
 SEXP R_flint_version(void);
+
+SEXP R_flint_coerce_bigz_fmpz(SEXP);
+SEXP R_flint_coerce_fmpz_bigz(SEXP);
+SEXP R_flint_coerce_bigq_fmpq(SEXP);
+SEXP R_flint_coerce_fmpq_bigq(SEXP);
+SEXP R_flint_coerce_mpfr_arf(SEXP);
+SEXP R_flint_coerce_arf_mpfr(SEXP);
 
 SEXP R_flint_ulong_initialize(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP R_flint_ulong_atomic(SEXP);
@@ -202,7 +214,11 @@ static R_CallMethodDef CallEntries[] =
 {
 #define CALL_ENTRY(name, nargs) {#name, (DL_FUNC) &name, nargs}
 	CALL_ENTRY(R_flint_abi, 0),
+	CALL_ENTRY(R_flint_aperm, 3),
+	CALL_ENTRY(R_flint_asplit, 3),
 	CALL_ENTRY(R_flint_bind, 4),
+	CALL_ENTRY(R_flint_bits, 1),
+	CALL_ENTRY(R_flint_bits_accurate, 1),
 	CALL_ENTRY(R_flint_bits_per_limb, 0),
 	CALL_ENTRY(R_flint_class, 1),
 	CALL_ENTRY(R_flint_diag, 3),
@@ -223,6 +239,12 @@ static R_CallMethodDef CallEntries[] =
 	CALL_ENTRY(R_flint_transpose, 2),
 	CALL_ENTRY(R_flint_valid, 1),
 	CALL_ENTRY(R_flint_version, 0),
+	CALL_ENTRY(R_flint_coerce_bigz_fmpz, 1),
+	CALL_ENTRY(R_flint_coerce_fmpz_bigz, 1),
+	CALL_ENTRY(R_flint_coerce_bigq_fmpq, 1),
+	CALL_ENTRY(R_flint_coerce_fmpq_bigq, 1),
+	CALL_ENTRY(R_flint_coerce_mpfr_arf, 1),
+	CALL_ENTRY(R_flint_coerce_arf_mpfr, 1),
 	CALL_ENTRY(R_flint_ulong_initialize, 6),
 	CALL_ENTRY(R_flint_ulong_atomic, 1),
 	CALL_ENTRY(R_flint_ulong_format, 2),
@@ -313,6 +335,7 @@ void attribute_visible R_init_flint(DllInfo *info)
 	R_useDynamicSymbols(info, FALSE);
 	R_forceSymbols(info, TRUE);
 	R_flint_symbol_missing   = Rf_install(".__WAS_MISSING__.");
+	R_flint_symbol_dot_data  = Rf_install(".Data");
 	R_flint_symbol_dot_xdata = Rf_install(".xData");
 	R_flint_symbol_dim       = Rf_install("dim");
 	R_flint_symbol_dimnames  = Rf_install("dimnames");

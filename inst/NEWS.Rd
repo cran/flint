@@ -1,6 +1,84 @@
 \name{NEWS}
 \title{News for \R{} Package \pkg{flint}}
 \newcommand{\GH}{\href{https://github.com/jaganmn/flint/issues/#1}{GH##1}}
+\section{Changes in version 0.1.1 (2025-10-08)}{
+  \subsection{Description}{
+    \itemize{
+      \item \code{Enhances: Rmpfr, gmp} as \code{.initForeign} defines
+      methods for their classes.
+    }
+  }
+  \subsection{Documentation}{
+    \itemize{
+      \item There was a typo in \file{man/arb_hypgeom_bessel_j.Rd},
+      in the modified Bessel's equation, affecting only HTML and PDF
+      output.
+    }
+  }
+  \subsection{Methods}{
+    \itemize{
+      \item S4 methods are defined for generic (or made-generic)
+      functions \code{aperm} and \code{asplit}.
+
+      \item S4 methods for \code{anyDuplicated}, \code{duplicated}, and
+      \code{unique} are amended to handle arrays \code{x}.  Accordingly
+      they all gain an argument \code{MARGIN} with default value
+      \code{1L}.
+
+      \item \code{summary} coerces to data frame and dispatches when its
+      argument is a matrix, following \code{summary.matrix}.
+
+      \item \code{print} gains an argument \code{base}, which it passes
+      to \code{format}.
+    }
+  }
+  \subsection{New Features}{
+    \itemize{
+      \item \R{} functions \code{flintBits} and \code{flintBitsAccurate}
+      can be used to get the number of bits necessary for exact
+      representation of an integer or floating type number and the
+      number of bits of an interval midpoint whose accuracy is
+      guaranteed given the interval radius.  These are experimental
+      and so only partially documented.
+
+      \item \R{} function \code{.initForeign} can be used to define
+      coercions between classes in \pkg{flint} and analogous classes in
+      external packages, currently \pkg{Rmpfr} or \pkg{gmp}.
+    }
+  }
+  \subsection{Bug Fixes}{
+    \itemize{
+      \item Calls to \code{norm} matching signature
+      \code{c(x = "flint", type = "missing")} signaled an error due to
+      dispatch ambiguity, for some reason not detected by the call to
+      \code{testInheritedMethods} in \file{tests/ambiguity.R}.
+
+      \item Calls to \code{colSums} and friends whose return value would
+      have length zero allowed undefined behaviour (divide-by-zero in
+      integer division).
+
+      \item Calls to \code{cbind} and \code{rbind} could fill dimension
+      names incorrectly when obtaining components from the call.  Only
+      the second component of the call (corresponding to the first
+      actual argument) was \dQuote{seen}.
+
+      \item \code{as.data.frame} signaled an error when its argument
+      was an array due to a \dQuote{too late} assignment.
+
+      \item \code{Summary} transferred attributes from its argument to
+      its return value, in methods for classes \code{ulong} and
+      \code{slong}.
+
+      \item \code{mtfrm} passes \code{digits.mag = 0L} to \code{format}
+      so that \code{mag} vectors are also formatted exactly.
+    }
+  }
+  \subsection{Internals}{
+    \itemize{
+      \item External pointers are cleared by their finalizers.
+    }
+  }
+}
 \section{Changes in version 0.1.0 (2025-09-21)}{
   \subsection{Description}{
     \itemize{

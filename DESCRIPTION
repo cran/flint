@@ -1,25 +1,26 @@
 Package: flint
-Version: 0.1.0
-VersionNote: sync configure.ac
-Date: 2025-09-21
+Version: 0.1.1
+VersionNote: sync configure.ac, inst/NEWS.Rd
+Date: 2025-10-08
 Title: Fast Library for Number Theory
 Description: 
 	An R interface to 'FLINT' <https://flintlib.org/>, a C library for
 	number theory.  'FLINT' extends GNU 'MPFR' <https://www.mpfr.org/>
 	and GNU 'MP' <https://gmplib.org/> with support for operations on
-	standard rings (the integers, the integers modulo n, finite fields,
-	the rational, p-adic, real, and complex numbers) as well as matrices
-	and polynomials over rings.  'FLINT' implements midpoint-radius
-	interval arithmetic, also known as ball arithmetic, in the real and
-	complex numbers, enabling computation in arbitrary precision with
-	rigorous propagation of rounding errors; see Johansson (2017)
-	<doi:10.1109/TC.2017.2690633>.  Finally, 'FLINT' provides ball
-	arithmetic implementations of many special mathematical functions,
-	with high coverage of reference works such as the NIST Digital
-	Library of Mathematical Functions <https://dlmf.nist.gov/>.  The R
-	interface defines S4 classes, generic functions, and methods for
-	representation and basic operations as well as plain R functions
-	mirroring and vectorizing entry points in the C library.
+	standard rings (the integers, the integers modulo n, finite
+	fields, the rational, p-adic, real, and complex numbers) as well
+	as matrices and polynomials over rings.  'FLINT' implements
+	midpoint-radius interval arithmetic, also known as ball
+	arithmetic, in the real and complex numbers, enabling computation
+	in arbitrary precision with rigorous propagation of rounding and
+	other errors; see Johansson (2017) <doi:10.1109/TC.2017.2690633>.
+	Finally, 'FLINT' provides ball arithmetic implementations of many
+	special mathematical functions, with high coverage of reference
+	works such as the NIST Digital Library of Mathematical Functions
+	<https://dlmf.nist.gov/>.  The R interface defines S4 classes,
+	generic functions, and methods for representation and basic
+	operations as well as plain R functions mirroring and vectorizing
+	entry points in the C library.
 License: GPL (>= 2)
 URL: https://github.com/jaganmn/flint
 BugReports: https://github.com/jaganmn/flint/issues
@@ -33,13 +34,14 @@ Authors@R:
 	         comment = c(ORCID = "0000-0002-8685-9910")))
 Depends: R (>= 4.3), methods
 Imports: stats
+Enhances: Rmpfr, gmp
 SystemRequirements: flint (>= 3), mpfr (>= 3.1), gmp
 SystemRequirementsNote: purely informational as we use configure tests
 NeedsCompilation: yes
-Packaged: 2025-09-21 11:19:39 UTC; mikael
+Packaged: 2025-10-08 19:18:54 UTC; mikael
 Author: Mikael Jagan [aut, cre] (ORCID:
     <https://orcid.org/0000-0002-3542-2938>),
   Martin Maechler [ctb] (ORCID: <https://orcid.org/0000-0002-8685-9910>)
 Maintainer: Mikael Jagan <jaganmn@mcmaster.ca>
 Repository: CRAN
-Date/Publication: 2025-09-21 12:00:02 UTC
+Date/Publication: 2025-10-08 19:40:02 UTC

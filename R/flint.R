@@ -925,8 +925,8 @@ function (target, current,
             scale <- mean(abs(target))
     }
     else if (length(scale) != 1L && length(scale) != nt)
-        stop(gettextf("length of '%s' is not 1 or length(%s)",
-                      "scale", "target"),
+        stop(gettextf("length of '%s' is not %d or %s",
+                      "scale", 1L, "length(target)"),
              domain = NA)
     else if (is.na(m <- min(scale)) || !(m > 0))
         stop(gettextf("'%s' is not positive",
@@ -992,13 +992,29 @@ rm(.all.equal)
 
 setMethod("anyDuplicated",
           c(x = "flint"),
-          function (x, incomparables = FALSE, ...) {
-              if (!(missing(incomparables) ||
-                    (is.logical(incomparables) &&
-                     length(incomparables) == 1L &&
-                     !(is.na(incomparables) || incomparables))))
-                  incomparables <- mtfrm(as(incomparables, flintClass(x)))
-              anyDuplicated(mtfrm(x), incomparables = incomparables, ...)
+          function (x, incomparables = FALSE, MARGIN = 1L, ...) {
+              if (is.null(d <- x@dim) ||
+                  !(is.character(MARGIN) || any(MARGIN <- as.integer(MARGIN)))) {
+                  if (!isFALSE(incomparables))
+                      incomparables <- mtfrm(as(incomparables, flintClass(x)))
+                  anyDuplicated.default(mtfrm(x), incomparables = incomparables, ...)
+              } else {
+                  if (!isFALSE(incomparables))
+                      .NotYetUsed("incomparables")
+                  anyDuplicated.default(asplit(mtfrm(x), MARGIN = MARGIN, drop = TRUE), ...)
+              }
+          })
+
+setMethod("aperm",
+          c(a = "flint"),
+          function (a, perm, resize = TRUE, ...) {
+              perm <-
+              if (missing(perm))
+                  NULL
+              else if (is.character(perm))
+                  match(perm, names(a@dimnames), 0L)
+              else as.integer(perm)
+              .Call(R_flint_aperm, a, perm, as.logical(resize))
           })
 
 setMethod("as.raw",
@@ -1085,9 +1101,9 @@ setMethod("as.data.frame",
                   names <- if (!optional) nm[[1L]]
               } else {
                   ans <- vector("list", prod(d[-1L]))
+                  r <- d[[1L]]
                   for (i in seq_along(ans))
                       ans[[i]] <- x[seq.int(to = i * r, length.out = r)]
-                  r <- d[[1L]]
                   if (is.null(row.names))
                       row.names <- dn[[1L]]
                   names <-
@@ -1127,6 +1143,16 @@ setMethod("as.POSIXlt",
           c(x = "flint"),
           function (x, tz = "", ...)
               as.POSIXlt(asVector(x, "vector", FALSE), tz = tz, ...))
+
+setMethod("asplit",
+          c(x = "flint"),
+          function (x, MARGIN, drop = FALSE) {
+              MARGIN <-
+              if (is.character(MARGIN))
+                  match(MARGIN, names(x@dimnames), 0L)
+              else as.integer(MARGIN)
+              .Call(R_flint_asplit, x, MARGIN, as.logical(drop))
+          })
 
 .bind.class <-
 function (x)
@@ -1389,13 +1415,21 @@ setMethod("drop",
 
 setMethod("duplicated",
           c(x = "flint"),
-          function (x, incomparables = FALSE, ...) {
-              if (!(missing(incomparables) ||
-                    (is.logical(incomparables) &&
-                     length(incomparables) == 1L &&
-                     !(is.na(incomparables) || incomparables))))
-                  incomparables <- mtfrm(as(incomparables, flintClass(x)))
-              duplicated(mtfrm(x), incomparables = incomparables, ...)
+          function (x, incomparables = FALSE, MARGIN = 1L, ...) {
+              ans <-
+              if (is.null(d <- x@dim) ||
+                  !(is.character(MARGIN) || any(MARGIN <- as.integer(MARGIN)))) {
+                  if (!isFALSE(incomparables))
+                      incomparables <- mtfrm(as(incomparables, flintClass(x)))
+                  duplicated.default(y <- mtfrm(x), incomparables = incomparables, ...)
+              } else {
+                  if (!isFALSE(incomparables))
+                      .NotYetUsed("incomparables")
+                  duplicated.default(y <- asplit(mtfrm(x), MARGIN = MARGIN, drop = TRUE), ...)
+              }
+              dim(ans) <- dim(y)
+              dimnames(ans) <- dimnames(y)
+              ans
           })
 
 setMethod("findInterval",
@@ -1526,7 +1560,7 @@ rm(.match)
 setMethod("mtfrm",
           c(x = "flint"),
           function (x)
-              format(`names<-`(x, NULL), base = 62L, digits = 0L))
+              format(x, base = 62L, digits = 0L, digits.mag = 0L))
 
 setMethod("names",
           c(x = "flint"),
@@ -1566,12 +1600,12 @@ setMethod("names<-",
           })
 
 setMethod("norm",
-          c(x = "flint"),
+          c(x = "flint", type = "ANY"),
           function (x, type, ...) {
               if (length(x@dim) != 2L)
                   stop(gettextf("'%s' is not a matrix", "x"),
                        domain = NA)
-              type <- if (missing(type)) "O" else substr(type, 1L, 1L)
+              type <- substr(type, 1L, 1L)
               max0 <-
               function (x) {
                   if (length(x))
@@ -1592,10 +1626,17 @@ setMethod("norm",
                           domain = NA))
           })
 
+## The method with signature c(x = "ANY", type = "missing") in package
+## 'methods' seems to call base::norm, not methods:::.implicitTable$norm
+setMethod("norm",
+          c(x = "flint", type = "missing"),
+          function (x, type, ...)
+              norm(x, type = "O", ...))
+
 setMethod("print",
           c(x = "flint"),
-          function (x, digits = NULL, digits.mag = NULL, max = NULL,
-                    Rdiff = NULL, ...) {
+          function (x, base = 10L, digits = NULL, digits.mag = NULL,
+                    max = NULL, Rdiff = NULL, ...) {
               s <- flintTriple(x)
               if (is.null(Rdiff))
                   Rdiff <- getOption("flint.Rdiff", FALSE)
@@ -1677,7 +1718,7 @@ setMethod("print",
                            paste(d - rep(c(0L, k, 1L), c(w. - 1L, 1L, nd - w.)),
                                  collapse = ","))
               }
-              print.default(format(y, digits = digits, digits.mag = digits.mag),
+              print.default(format(y, base = base, digits = digits, digits.mag = digits.mag),
                             quote = FALSE, right = TRUE, max = max, ...)
               if (!is.null(msg))
                   cat(msg, "\n", sep = "")
@@ -1970,6 +2011,8 @@ setMethod("show",
 setMethod("summary",
           c(object = "flint"),
           function (object, triple = FALSE, quantile.type = 7L, ...) {
+              if (length(d <- object@dim) == 2L)
+                  return(summary(as.data.frame(object), triple = triple, quantile.type = quantile.type, ...))
               if (triple || any(flintClass(object) == c("acf", "arb", "acb")))
                   return(`class<-`(`names<-`(flintTriple(object), c("class", "length", "address")), "noquote"))
               if (anyna <- anyNA(object))
@@ -1987,7 +2030,24 @@ setMethod("t",
 
 setMethod("unique",
           c(x = "flint"),
-          function (x, incomparables = FALSE, ...) {
-              x@names <- NULL
-              x[!duplicated(x, incomparables = incomparables, ...)]
+          function (x, incomparables = FALSE, MARGIN = 1L, ...) {
+              if (is.null(d <- x@dim) ||
+                  !(is.character(MARGIN) || any(MARGIN <- as.integer(MARGIN)))) {
+                  if (!isFALSE(incomparables))
+                      incomparables <- mtfrm(as(incomparables, flintClass(x)))
+                  x[!duplicated.default(mtfrm(x), incomparables = incomparables, ...)]
+              } else {
+                  if (!isFALSE(incomparables))
+                      .NotYetUsed("incomparables")
+                  if (length(MARGIN) != 1L)
+                      stop(gettextf("length of '%s' is not %d",
+                                    "MARGIN", 1L),
+                           domain = NA)
+                  if (is.character(MARGIN))
+                      MARGIN <- match(MARGIN, names(x@dimnames), 0L)
+                  args <- rep(c(list(x), list(substitute()), list(drop = FALSE)),
+                              c(1L, length(d), 1L))
+                  args[[1L + MARGIN]] <- !duplicated.default(asplit(mtfrm(x), MARGIN = MARGIN, drop = TRUE), ...)
+                  do.call(`[`, args)
+              }
           })

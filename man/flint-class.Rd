@@ -48,7 +48,11 @@
 \alias{[[<-,flint,flint,ANY,flint-method}
 \alias{[[<-,flint,flint,flint,ANY-method}
 \alias{[[<-,flint,flint,flint,flint-method}
+\alias{all.equal,ANY,flint-method}
+\alias{all.equal,flint,ANY-method}
+\alias{all.equal,flint,flint-method}
 \alias{anyDuplicated,flint-method}
+\alias{aperm,flint-method}
 \alias{as.raw,flint-method}
 \alias{as.logical,flint-method}
 \alias{as.integer,flint-method}
@@ -61,9 +65,7 @@
 \alias{as.Date,flint-method}
 \alias{as.POSIXct,flint-method}
 \alias{as.POSIXlt,flint-method}
-\alias{all.equal,ANY,flint-method}
-\alias{all.equal,flint,ANY-method}
-\alias{all.equal,flint,flint-method}
+\alias{asplit,flint-method}
 \alias{c,flint-method}
 \alias{cbind2,ANY,flint-method}
 \alias{cbind2,flint,ANY-method}
@@ -96,6 +98,7 @@
 \alias{names<-,flint,NULL-method}
 \alias{names<-,flint,character-method}
 \alias{norm,flint,ANY-method}
+\alias{norm,flint,missing-method}
 \alias{print,flint-method}
 \alias{quantile,flint-method}
 \alias{rbind2,ANY,flint-method}
@@ -265,6 +268,12 @@ flint.array(class, \dots)
     \item{\code{anyDuplicated}}{
       \code{signature(x = "flint")}:\cr
       returns \code{anyDuplicated(mtfrm(x), \dots)}.}
+    \item{\code{aperm}}{
+      \code{signature(a = "flint")}:\cr
+      returns the array obtained by permuting the dimensions of \code{a}
+      according to a second argument \code{perm}, following the
+      documented behaviour of the S3 default method for
+      \code{\link{aperm}}.}
     \item{\code{as.raw}, \code{as.logical}, \code{as.integer}, \code{as.numeric}, \code{as.complex}}{
       \code{signature(x = "flint")}:\cr
       returns the value of \code{as.vector(x, mode = *)}.  Methods for
@@ -286,6 +295,12 @@ flint.array(class, \dots)
       containing \code{flint} vectors using \code{as.data.frame} and
       functions that call it such as \code{\link{data.frame}} and
       \code{\link{cbind.data.frame}}.}
+    \item{\code{asplit}}{
+      \code{signature(x = "flint")}:\cr
+      returns a list array containing the marginal splits of \code{x}
+      indicated by a second argument \code{MARGIN}, following the
+      documented behaviour of the \pkg{base} function, hence see
+      \code{\link{asplit}}.}
     \item{\code{c}}{
       \code{signature(x = "flint")}:\cr
       returns \code{\link{c.flint}(x, \dots)}, the concatenation of the
@@ -308,7 +323,7 @@ flint.array(class, \dots)
       \code{signature(x = "flint")}:\cr
       returns
       \code{findInterval(x=x, vec=breaks, left.open=right, rightmost.closed=include.lowest)},
-      hence see below.  The behaviour is consistent with the default
+      hence see below.  The behaviour is consistent with the S3 default
       method for \code{\link{cut}} with argument \code{labels} set to
       \code{FALSE}, provided that \code{breaks} is sorted and no element
       of \code{x} is out of bounds.}
@@ -412,13 +427,14 @@ flint.array(class, \dots)
       returns an integer vector matching \code{x} to \code{table} after
       coercing to a common class then \dQuote{match transforming} with
       \code{\link{mtfrm}}.  The behaviour is parallel to that of the
-      default method, hence see \code{\link{match}}.}
+      \pkg{base} function, hence see \code{\link{match}}.}
     \item{\code{mtfrm}}{
       \code{signature(x = "flint")}:\cr
-      returns \code{format(x, base = 62L, digits = 0L)}, a character
-      vector representing the elements of \code{x} exactly in base 62
-      (chosen over smaller bases to reduce the number of characters in
-      the output); see also \code{\link{format-methods}}.}
+      returns
+      \code{format(x, base = 62L, digits = 0L, digits.mag = 0L)},
+      a character vector representing the elements of \code{x} exactly
+      in base 62 (chosen over smaller bases to reduce the number of
+      characters in the output); see also \code{\link{format-methods}}.}
     \item{\code{names}}{
       \code{signature(x = "flint")}:\cr
       returns the value of the \code{names} slot.}
@@ -519,7 +535,12 @@ seq(to=, by=, length.out=)}
       handling non-array \code{x} as \code{length(x)}-by-1 matrices.}
     \item{\code{unique}}{
       \code{signature(x = "flint")}:\cr
-      returns \code{x[!duplicated(x, \dots)]}.}
+      if \code{x} is not an array or \code{MARGIN} is empty, returns
+      a vector containing the unique elements of \code{x}; otherwise,
+      returns an array containing the unique splits of \code{x} by
+      margin \code{MARGIN}.  Elements (splits) of \code{x} are
+      considered distinct if the corresponding elements (splits) of
+      \code{mtfrm(x)} are not identical.}
   }
   Methods are on purpose \emph{not} defined for generic functions whose
   default methods correctly handle objects inheriting from virtual class

@@ -4,12 +4,15 @@ arf_rnd_t remapRnd(mpfr_rnd_t);
 
 void R_flint_arb_finalize(SEXP x)
 {
+	arb_ptr p = R_ExternalPtrAddr(x);
+	if (p) {
 	mp_limb_t j, n;
 	uucopy(&n, (const unsigned int *) INTEGER_RO(R_ExternalPtrProtected(x)));
-	arb_ptr p = R_ExternalPtrAddr(x);
 	for (j = 0; j < n; ++j)
 		arb_clear(p + j);
 	flint_free(p);
+	R_ClearExternalPtr(x);
+	}
 	return;
 }
 
@@ -1313,7 +1316,7 @@ SEXP R_flint_arb_ops1(SEXP s_op, SEXP s_x, SEXP s_dots)
 		nz = 1;
 		for (k = 0; k < ndz; ++k)
 			nz *= (mp_limb_t) (dz[k] = dx[(byrow) ? k : off + k]);
-		mp_limb_t jt, nt = nx/nz;
+		mp_limb_t jt, nt = (nz == 0) ? 0 : nx/nz;
 
 		SEXP dimnamesx = R_do_slot(s_x, R_flint_symbol_dimnames),
 			dimnamesz = R_NilValue;
