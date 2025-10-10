@@ -1,6 +1,18 @@
 \name{NEWS}
 \title{News for \R{} Package \pkg{flint}}
 \newcommand{\GH}{\href{https://github.com/jaganmn/flint/issues/#1}{GH##1}}
+\section{Changes in version 0.1.2 (2025-10-10)}{
+  \subsection{Compatibility}{
+    \itemize{
+      \item Installation of \pkg{flint} version 0.1.1 failed under \R{}
+      versions 4.[3-4].z because the non-generic function \code{asplit}
+      in \pkg{base} did not admit a formal argument \code{drop}.
+      Compatibility is restored by conditional definition in
+      \code{.onLoad} of the S4 generic function and S4 method with
+      signature \code{c(x = "flint")}.
+    }
+  }
+}
 \section{Changes in version 0.1.1 (2025-10-08)}{
   \subsection{Description}{
     \itemize{
