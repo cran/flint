@@ -1,6 +1,167 @@
 \name{NEWS}
 \title{News for \R{} Package \pkg{flint}}
 \newcommand{\GH}{\href{https://github.com/jaganmn/flint/issues/#1}{GH##1}}
+\section{Changes in version 0.1.3 (2025-12-15)}{
+  \subsection{Description}{
+    \itemize{
+      \item The maintainer e-mail address is updated.
+    }
+  }
+  \subsection{Compatibility}{
+    \itemize{
+      \item Tests of \code{.initForeign("Rmpfr")} are skipped if
+      \pkg{Rmpfr} is too old.  Versions older than 1.1-2 did not detect
+      \code{sizeof(mpfr_exp_t) != sizeof(mp_limb_t)}, so they could
+      initialize \code{mpfr1} objects with \code{exp} slot of wrong
+      length.
+    }
+  }
+  \subsection{Documentation}{
+    \itemize{
+      \item Topic \code{flint-class} wrongly stated that the S3 default
+      method for \code{diff} works for \code{x} inheriting from virtual
+      class \code{flint}.
+
+      \item Topic \code{format-methods} wrongly stated that methods
+      for \code{x} inheriting from \code{arb} or \code{acb} required
+      \code{rnd} of length 2.
+    }
+  }
+  \subsection{Generic Functions}{
+    \itemize{
+      \item S4 generic functions \code{isSigned}, \code{isComplex}, and
+      \code{isFloating} for testing whether the type or class of the
+      argument represents signed, complex, and floating-point numbers,
+      respectively.
+    }
+  }
+  \subsection{Methods}{
+    \itemize{
+      \item S4 methods are defined for generic (or made-generic)
+      functions \code{diff}, \code{diffinv}, \code{kronecker}, and
+      \code{outer}.
+
+      \item S4 methods for group generic functions \code{Complex} and
+      \code{Math} are more completely implemented for classes
+      \code{mag}, \code{arf}, and \code{acf}, for parity with classes
+      \code{arb} and \code{acb}.
+
+      \item \code{/} is implemented for \code{acf}.  \code{^} is
+      implemented for \code{arf} and \code{acf}.  \code{\%\%} and
+      \code{\%/\%} are implemented for \code{mag}, \code{arf} and
+      \code{arb}.
+
+      \item S4 generic functions \code{Real}, \code{Real<-},
+      \code{Imag}, and \code{Imag<-} gain sensible default methods.
+    }
+  }
+  \subsection{New Features}{
+    \itemize{
+      \item Class generator functions gain arguments \code{prec} and
+      \code{rnd} (or \code{rnd.mag}) where appropriate providing users
+      with greater control over conversions.  For example, by passing
+      non-\code{NULL} \code{prec}, one can convert inexactly even if
+      exact conversion is possible.
+
+      \item \R{} function \code{flintRndMag} for getting and setting
+      the global default rounding mode for \code{mag}.  S4 methods for
+      \code{format} gain a new argument \code{rnd.mag}, parallel to
+      \code{digits.mag}.
+
+      \item \R{} functions \code{asMatrix} and \code{asArray}, analogues
+      of \code{asVector}.
+
+      \item \R{} functions \code{arb_integrate} and \code{acb_integrate}
+      for integration of functions of one variable.
+
+      \item \R{} function \code{arf_rk} for numerical solution of
+      systems of ordinary differential equations.
+
+      \item \R{} functions \code{arb_hypgeom_polygamma} and
+      \code{arb_dirichlet_lerch_phi} are provided for symmetry with the
+      \code{acb_*} ones, which they wrap.  \acronym{FLINT} provides no
+      such entry points as of this writing.
+
+      \item The global default precision, which one gets and sets with
+      \R{} function \code{flintPrec}, may now be an object of class
+      \code{slong}.  Previously, only numeric (of type \code{integer} or
+      \code{double}) values were supported.
+
+      \item The limits of \code{ulong} and \code{slong} are available as
+      objects \code{ULONG_MAX}, \code{SLONG_MIN}, and \code{SLONG_MAX},
+      defined at load time according to the ABI.
+
+      \item Class generator functions support conversion from
+      midpoint-radius interval types to point types, taking midpoints
+      and discarding radii.
+
+      \item Conversion from complex types to real types warns about
+      nonzero imaginary parts.  Conversion from midpoint-radius interval
+      types to point types warns about nonzero radii.
+    }
+  }
+  \subsection{Bug Fixes}{
+    \itemize{
+      \item \code{all.equal(x, y, check.class = FALSE)} failed to detect
+      numerical differences between \code{x} and \code{y}, returning
+      \code{TRUE} incorrectly when it detected no other differences.
+
+      \item \code{asVector(x, strict = FALSE)} did not correctly handle
+      data frames \code{x}.
+
+      \item \code{tcrossprod(x, y)} misbehaved when neither \code{x} nor
+      \code{y} was a matrix, throwing an error when the lengths were not
+      equal and triggering a segfault when they were.
+
+      \item Row and column labels were not printed for arrays of length
+      zero.
+
+      \item Segments of \code{names(c(\dots))} corresponding to a tagged
+      argument of \code{c} were not constructed correctly when the
+      tagged argument was named or when it was unnamed and of unit
+      length.
+
+      \item \code{as.character} passes \code{digits.mag = 8L} to
+      \code{format}.  One method gave too many digits and others gave
+      too few.
+
+      \item \code{Arg(x)} wrongly gave \code{sign(x)} times \eqn{pi}
+      for \code{x} of class \code{mag}, \code{arf}, or \code{arb}.
+
+      \item \code{mag(0)/mag(0)} and \code{mag(Inf)/mag(Inf)} wrongly
+      returned \code{mag(Inf)}.  Now they signal an error.
+
+      \item Conversion to \code{ulong} or \code{slong} of \code{NaN},
+      \code{-Inf}, or \code{Inf} stored as \code{mag} or \code{arf}
+      signaled an unhelpful error (\dQuote{caught exception}).
+
+      \item \code{diag<-} assigned to entries in the first row rather
+      than to entries in the main diagonal.
+
+      \item Conversion from \code{flint} to atomic withholds warnings
+      until after memory is freed, in case warnings are caught by a
+      handler.
+    }
+  }
+  \subsection{Internals}{
+    \itemize{
+      \item \proglang{C} function \code{newObject} is modified so that
+      it finds class definitions also when called from \code{.onLoad}.
+
+      \item \proglang{C} function \code{newFlint}, simplifying low level
+      instantiation of \code{flint} objects.
+
+      \item Conditional definitions of functions tested by macro
+      \code{AC_CHECK_FUNCS} are centralized in \file{src/fallback.c}.
+      Declarations are provided by \file{src/fallback.h}.
+
+      \item Enumerated types \code{R_flint_ops2_t} and
+      \code{R_flint_ops1_t} designating binary and unary operations,
+      used by \code{R_flint_*_op2} and \code{R_flint_*_ops1} as indices
+      of \code{switch} statements.
+    }
+  }
+}
 \section{Changes in version 0.1.2 (2025-10-10)}{
   \subsection{Compatibility}{
     \itemize{
@@ -490,7 +651,7 @@
 
       \item \R{} functions \code{flintPrec} and \code{flintRnd} for
       getting and setting the global default precision and rounding
-      modes.
+      mode.
 
       \item \R{} function \code{flintSize} for calculating the number of
       bytes used by a \code{flint} vector.

@@ -1,19 +1,22 @@
 /* src/config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Define to 1 if you have the 'acb_log_base' function. */
+#undef HAVE_ACB_LOG_BASE
+
+/* Define to 1 if you have the 'acb_log_base_ui' function. */
+#undef HAVE_ACB_LOG_BASE_UI
+
 /* Define to 1 if you have the 'acb_mat_cho' function. */
 #undef HAVE_ACB_MAT_CHO
 
 /* Define to 1 if you have the 'acb_mat_inv_cho_precomp' function. */
 #undef HAVE_ACB_MAT_INV_CHO_PRECOMP
 
-/* Define to 1 if you have the 'acf_abs' function. */
-#undef HAVE_ACF_ABS
-
-/* Define to 1 if you have the 'acf_arg' function. */
-#undef HAVE_ACF_ARG
-
 /* Define to 1 if you have the 'acf_conj' function. */
 #undef HAVE_ACF_CONJ
+
+/* Define to 1 if you have the 'acf_div' function. */
+#undef HAVE_ACF_DIV
 
 /* Define to 1 if you have the 'acf_div_ui' function. */
 #undef HAVE_ACF_DIV_UI
@@ -38,6 +41,30 @@
 
 /* Define to 1 if you have the 'acf_zero' function. */
 #undef HAVE_ACF_ZERO
+
+/* Define to 1 if you have the 'arb_arg' function. */
+#undef HAVE_ARB_ARG
+
+/* Define to 1 if you have the 'arb_fdiv_q' function. */
+#undef HAVE_ARB_FDIV_Q
+
+/* Define to 1 if you have the 'arb_fdiv_r' function. */
+#undef HAVE_ARB_FDIV_R
+
+/* Define to 1 if you have the 'arb_log_base' function. */
+#undef HAVE_ARB_LOG_BASE
+
+/* Define to 1 if you have the 'arb_polygamma' function. */
+#undef HAVE_ARB_POLYGAMMA
+
+/* Define to 1 if you have the 'arb_set_mag' function. */
+#undef HAVE_ARB_SET_MAG
+
+/* Define to 1 if you have the 'arb_set_round_si' function. */
+#undef HAVE_ARB_SET_ROUND_SI
+
+/* Define to 1 if you have the 'arb_set_round_ui' function. */
+#undef HAVE_ARB_SET_ROUND_UI
 
 /* Define to 1 if you have the 'd_mul_2exp' function. */
 #undef HAVE_D_MUL_2EXP

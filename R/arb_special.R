@@ -21,6 +21,10 @@ function (s, a = 1, prec = flintPrec()) {
     res
 }
 
+arb_dirichlet_lerch_phi <-
+function (x = 1, s, a = 1, prec = flintPrec())
+    as(acb_dirichlet_lerch_phi(as(x, "arb"), as(s, "arb"), as(a, "arb"), prec), "arb")
+
 arb_hypgeom_bessel_j <-
 function (nu, x, prec = flintPrec()) {
     res <- flintNew("arb")
@@ -67,6 +71,13 @@ arb_hypgeom_lgamma <-
 function (x, prec = flintPrec()) {
     res <- flintNew("arb")
     .Call(R_flint_arb_hypgeom_lgamma, res, as(x, "arb"), as(prec, "slong"))
+    res
+}
+
+arb_hypgeom_polygamma <-
+function (s = 0, x, prec = flintPrec()) {
+    res <- flintNew("arb")
+    .Call(R_flint_arb_hypgeom_polygamma, res, as(s, "arb"), as(x, "arb"), as(prec, "slong"))
     res
 }
 

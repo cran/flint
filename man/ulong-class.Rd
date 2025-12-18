@@ -5,6 +5,9 @@
 \alias{slong}
 \alias{ulong.array}
 \alias{slong.array}
+\alias{ULONG_MAX}
+\alias{SLONG_MIN}
+\alias{SLONG_MAX}
 \alias{!,ulong-method}
 \alias{!,slong-method}
 \alias{\%*\%,ANY,ulong-method}
@@ -125,6 +128,10 @@
 \alias{det,slong-method}
 \alias{determinant,ulong-method}
 \alias{determinant,slong-method}
+\alias{diff,ulong-method}
+\alias{diff,slong-method}
+\alias{diffinv,ulong-method}
+\alias{diffinv,slong-method}
 \alias{is.finite,ulong-method}
 \alias{is.finite,slong-method}
 \alias{is.infinite,ulong-method}
@@ -202,6 +209,12 @@ slong(x = 0L, length = 0L, names = NULL)
 
 ulong.array(x = 0L, dim = length(x), dimnames = NULL)
 slong.array(x = 0L, dim = length(x), dimnames = NULL)
+
+## Limits
+
+ULONG_MAX
+SLONG_MIN
+SLONG_MAX
 }
 \arguments{
   \item{x}{
@@ -252,6 +265,13 @@ slong(x, length=)}
 
   Usage of \code{ulong.array} and \code{slong.array} is modelled after
   \code{\link{array}}.
+
+  \code{ULONG_MAX} is a \code{ulong} vector of length 1 storing the
+  greatest integer representable by \code{ulong}, namely
+  \eqn{2^{n}-1}, where \eqn{n} is the value of \code{\link{flintABI}()}.
+  \code{SLONG_MIN} and \code{SLONG_MAX} are \code{slong} vectors of
+  length 1 storing the least and greatest integers representable by
+  \code{slong}, namely \eqn{-2^{n-1}} and \eqn{2^{n-1}-1}.
 }
 \section{Conversion}{
   Real numbers and real parts of complex numbers are rounded in the
@@ -275,11 +295,11 @@ slong(x, length=)}
 }
 \section{Methods}{
   \describe{
-    \item{\code{!}}{
+    \item{\code{\link{!}}}{
       \code{signature(x = "ulong")}:\cr
       \code{signature(x = "slong")}:\cr
-      equivalent to (but faster than) \code{x == 0}.}
-    \item{\code{\%*\%}, \code{crossprod}, \code{tcrossprod}}{
+      equivalent to (but faster than) \code{x == 0L}.}
+    \item{\code{\link{\%*\%}}, \code{\link{crossprod}}, \code{\link{tcrossprod}}}{
       \code{signature(x = "ulong", y = "ulong")}:\cr
       \code{signature(x = "slong", y = "slong")}:\cr
       \code{signature(x = "ulong", y = "ANY")}:\cr
@@ -293,33 +313,33 @@ slong(x, length=)}
       necessary and must be conformable (have compatible dimensions).
       Non-array operands of length \code{k} are handled as 1-by-\code{k}
       or \code{k}-by-1 matrices depending on the call.}
-    \item{\code{+}}{
+    \item{\code{\link{+}}}{
       \code{signature(e1 = "ulong", e2 = "missing")}:\cr
       \code{signature(e1 = "slong", e2 = "missing")}:\cr
       returns a copy of the argument.}
-    \item{\code{-}}{
+    \item{\code{\link{-}}}{
       \code{signature(e1 = "ulong", e2 = "missing")}:\cr
       \code{signature(e1 = "slong", e2 = "missing")}:\cr
       returns the negation of the argument.}
-    \item{\code{Complex}}{
+    \item{\code{\link[methods]{Complex}}}{
       \code{signature(z = "ulong")}:\cr
       \code{signature(z = "slong")}:\cr
       mathematical functions of one argument; see
       \code{\link[methods]{S4groupGeneric}}.  Member functions requiring
       promotion to a floating-point type may not be implemented.}
-    \item{\code{Math}}{
+    \item{\code{\link[methods]{Math}}}{
       \code{signature(x = "ulong")}:\cr
       \code{signature(x = "slong")}:\cr
       mathematical functions of one argument; see
       \code{\link[methods]{S4groupGeneric}}.  Member functions requiring
       promotion to a floating-point type may not be implemented.}
-    \item{\code{Math2}}{
+    \item{\code{\link[methods]{Math2}}}{
       \code{signature(x = "ulong")}:\cr
       \code{signature(x = "slong")}:\cr
       decimal rounding according to a second argument \code{digits}; see
       \code{\link[methods]{S4groupGeneric}}.  There are just two member
       member functions: \code{\link{round}}, \code{\link{signif}}.}
-    \item{\code{Ops}}{
+    \item{\code{\link[methods]{Ops}}}{
       \code{signature(e1 = "ulong", e2 = "ulong")}:\cr
       \code{signature(e1 = "slong", e2 = "slong")}:\cr
       \code{signature(e1 = "ulong", e2 = "ANY")}:\cr
@@ -332,7 +352,7 @@ slong(x, length=)}
       \code{\linkS4class{flint}}.  Operands are promoted as necessary.
       Array operands must be conformable (have identical dimensions).
       Non-array operands are recycled.}
-    \item{\code{Summary}}{
+    \item{\code{\link[methods]{Summary}}}{
       \code{signature(x = "ulong")}:\cr
       \code{signature(x = "slong")}:\cr
       univariate summary statistics; see
@@ -341,12 +361,12 @@ slong(x, length=)}
       \code{ulong}, \code{slong}, or \code{\linkS4class{fmpz}} vector of
       length 1 or 2 (\code{sum}, \code{prod}, \code{min}, \code{max},
       \code{range}).}
-    \item{\code{anyNA}}{
+    \item{\code{\link{anyNA}}}{
       \code{signature(x = "ulong")}:\cr
       \code{signature(x = "slong")}:\cr
       returns \code{FALSE}, as \code{ulong} and \code{slong} have no
       representation for \code{NaN}.}
-    \item{\code{as.vector}}{
+    \item{\code{\link{as.vector}}}{
       \code{signature(x = "ulong")}:\cr
       \code{signature(x = "slong")}:\cr
       returns \code{as.vector(y, mode)}, where \code{y} is a double
@@ -358,7 +378,7 @@ slong(x, length=)}
       \code{"name"}), \code{"pairlist"}, \code{"list"}, and
       \code{"expression"}, which are not \dQuote{number-like}, is
       handled specially.  See also \code{\link{asVector}}.}
-    \item{\code{backsolve}}{
+    \item{\code{\link{backsolve}}}{
       \code{signature(r = "ulong", x = "ulong")}:\cr
       \code{signature(r = "slong", x = "slong")}:\cr
       \code{signature(r = "ulong", x = "ANY")}:\cr
@@ -379,82 +399,82 @@ slong(x, length=)}
       If \code{r} and (if not missing) \code{x} are both formally
       rational, then the solution is exact and the return value is an
       \code{\linkS4class{fmpq}} matrix.}
-    \item{\code{chol}}{
+    \item{\code{\link{chol}}}{
       \code{signature(x = "ulong")}:\cr
       \code{signature(x = "slong")}:\cr
       coerces \code{x} to class \code{\linkS4class{arf}} and
       dispatches.}
-    \item{\code{chol2inv}}{
+    \item{\code{\link{chol2inv}}}{
       \code{signature(x = "ulong")}:\cr
       \code{signature(x = "slong")}:\cr
       returns the inverse of the positive definite matrix whose upper
       triangular Cholesky factor is the upper triangular part of
       \code{x}.  The return value is the exact inverse, being computed
       as \code{tcrossprod(backsolve(x))}.}
-    \item{\code{coerce}}{
+    \item{\code{\link[methods]{coerce}}}{
       \code{signature(from = "ANY", to = "ulong")}:\cr
       \code{signature(from = "ANY", to = "slong")}:\cr
       returns the value of \code{ulong(from)} or \code{slong(from)}.}
-    \item{\code{colSums}}{
+    \item{\code{\link{colSums}}}{
       \code{signature(x = "ulong")}:\cr
       \code{signature(x = "slong")}:\cr
       returns a \code{ulong} or (in case of overflow)
       \code{\linkS4class{fmpz}} vector or array containing the column
       sums of \code{x}, defined as sums over dimensions \code{1:dims}.}
-    \item{\code{colMeans}}{
+    \item{\code{\link{colMeans}}}{
       \code{signature(x = "ulong")}:\cr
       \code{signature(x = "slong")}:\cr
       returns an \code{\linkS4class{fmpq}} vector or array containing
       the column means of \code{x}, defined as means over dimensions
       \code{1:dims}.}
-    \item{\code{det}, \code{determinant}}{
+    \item{\code{\link{det}}, \code{\link{determinant}}, \code{\link{diff}}, \code{\link[stats]{diffinv}}}{
       \code{signature(x = "ulong")}:\cr
       \code{signature(x = "slong")}:\cr
       coerces \code{x} to class \code{\linkS4class{fmpz}} and
       dispatches.}
-    \item{\code{format}}{
+    \item{\code{\link{format}}}{
       \code{signature(x = "ulong")}:\cr
       \code{signature(x = "slong")}:\cr
       returns a character vector suitable for printing.  Optional
       arguments control the output; see \code{\link{format-methods}}.}
-    \item{\code{is.finite}}{
+    \item{\code{\link{is.finite}}}{
       \code{signature(x = "ulong")}:\cr
       \code{signature(x = "slong")}:\cr
       returns a logical vector whose elements are all \code{TRUE}, as
       \code{ulong} and \code{slong} have no representation for
       \code{NaN}, \code{-Inf}, and \code{Inf}.}
-    \item{\code{is.infinite}, \code{is.na}, \code{is.nan}}{
+    \item{\code{\link{is.infinite}}, \code{\link{is.na}}, \code{\link{is.nan}}}{
       \code{signature(x = "ulong")}:\cr
       \code{signature(x = "slong")}:\cr
       returns a logical vector whose elements are all \code{FALSE}, as
       \code{ulong} and \code{slong} have no representation for
       \code{NaN}, \code{-Inf}, and \code{Inf}.}
-    \item{\code{is.unsorted}}{
+    \item{\code{\link{is.unsorted}}}{
       \code{signature(x = "ulong")}:\cr
       \code{signature(x = "slong")}:\cr
       returns a logical indicating if \code{x} is not sorted in
       nondecreasing order (increasing order if optional argument
       \code{strictly} is set to \code{TRUE}).}
-    \item{\code{mean}}{
+    \item{\code{\link{mean}}}{
       \code{signature(x = "ulong")}:\cr
       \code{signature(x = "slong")}:\cr
       returns the arithmetic mean.  An error is signaled if the argument
       length is 0, because the return type is \code{\linkS4class{fmpq}}
       which cannot represent the result of division by 0.}
-    \item{\code{rowSums}}{
+    \item{\code{\link{rowSums}}}{
       \code{signature(x = "ulong")}:\cr
       \code{signature(x = "slong")}:\cr
       returns a \code{ulong} or (in case of overflow)
       \code{\linkS4class{fmpz}} vector or array containing the row sums
       of \code{x}, defined as sums over dimensions
       \code{(dims+1):length(dim(x))}.}
-    \item{\code{rowMeans}}{
+    \item{\code{\link{rowMeans}}}{
       \code{signature(x = "ulong")}:\cr
       \code{signature(x = "slong")}:\cr
       returns an \code{\linkS4class{fmpq}} vector or array containing
       the row means of \code{x}, defined as means over dimensions
       \code{(dims+1):length(dim(x))}.}
-    \item{\code{solve}}{
+    \item{\code{\link{solve}}}{
       \code{signature(a = "ulong", b = "ulong")}:\cr
       \code{signature(a = "slong", b = "slong")}:\cr
       \code{signature(a = "ulong", b = "ANY")}:\cr
@@ -484,5 +504,48 @@ slong(x, length=)}
 showClass("ulong")
 showClass("slong")
 showMethods(classes = c("ulong", "slong"))
+
+(zu <- ulong(length = 12L))
+stopifnot(flintSize(zu) * 8L == length(zu) * flintABI())
+
+## Conversion of data not representable in target type/class depends on
+## existence of NA value
+as.integer(SLONG_MIN)
+try(ulong(-1L))
+try(slong(NA_integer_))
+
+## Overflow in +, -, *, \%/\% promotes to arbitrary precision
+ulong(0L) - ulong(1L)
+ULONG_MAX + ulong(1L)
+
+## Mixture of unsigned and signed promotes to signed arbitrary precision
+## ("raw" is unsigned, "logical" and "integer" are signed)
+c(ulong(1L), as.raw(0L))
+c(ulong(1L), FALSE)
+c(ulong(1L), 0L)
+c(ulong(1L), slong(0L))
+
+## Quotients are formally rational
+SLONG_MAX/seq_len(8L)
+mean(slong(c(1L, 1L, 2L)))
+summary(slong(c(1L, 1L, 2L, 3L, 5L, 8L, 13L, 21L)))
+
+## Floored integer division
+p <- slong(-127L)
+q <- c(-(3L:1L), 1L:3L)
+stopifnot(identical(p \%/\% q * q + p \%\% q, rep(p, 6L)))
+
+## A sequence
+d <- 3L
+(s <- seq.int(from = SLONG_MIN + 1L, by = SLONG_MAX, length.out = d))
+stopifnot(identical(s, c(-SLONG_MAX, 0L, SLONG_MAX)),
+          identical(s \%/\% SLONG_MAX, slong(-1L:1L)),
+          identical(s  /  SLONG_MAX, fmpq(-1L:1L)))
+
+## An array
+(Xs <- diag(s, d))
+(Iu <- cbind(ulong(1L:d), ulong(1L:d)))
+stopifnot(identical(Xs, s * slong.array(rep(c(1L, 0L), c(1L, d)), c(d, d))),
+          identical(Xs[Iu], s), identical(diag(Xs), s))
 }
 \keyword{classes}

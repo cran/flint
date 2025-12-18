@@ -1,6 +1,7 @@
 #include "flint.h"
 
-SEXP R_flint_symbol_missing,
+SEXP R_flint_namespace,
+	R_flint_symbol_missing,
 	R_flint_symbol_dot_data,
 	R_flint_symbol_dot_xdata,
 	R_flint_symbol_dim,
@@ -27,9 +28,9 @@ const char *R_flint_classes[] =
 const char *R_flint_ops2[] =
 {
 	/* Arith (7) : */
-	"+", "-", "*", "%%", "%/%", "/", "^",
+	"+", "-", "*", "/", "^", "%%", "%/%",
 	/* Compare (6) : */
-	"==", "!=", "<", ">", "<=", ">=",
+	"==", "!=", "<", "<=", ">", ">=",
 	/* Logic (2) : */
 	"&", "|",
 	/* matrixOps (6) : */
@@ -52,7 +53,7 @@ const char *R_flint_ops1[] =
 	"abs", "sign", "sqrt",
 	"floor", "ceiling", "trunc",
 	"cummin", "cummax", "cumsum", "cumprod",
-	"log", "log10", "log2", "log1p", "exp", "expm1",
+	"log", "log2", "log10", "log1p", "exp", "expm1",
 	"cos", "cospi", "acos", "cosh", "acosh",
 	"sin", "sinpi", "asin", "sinh", "asinh",
 	"tan", "tanpi", "atan", "tanh", "atanh",
@@ -63,9 +64,11 @@ const char *R_flint_ops1[] =
 	"min", "max", "range",
 	"sum", "prod", "mean",
 	"any", "all", "anyNA", "is.unsorted",
-	"colSums", "rowSums", "colMeans", "rowMeans",
-	/* matrixOps (8) : */
-	"solve", "backsolve", "tbacksolve", "chol2inv", "chol", "det",
+	"rowSums", "colSums", "rowMeans", "colMeans",
+	/* matrixOps (10) : */
+	"crossprod", "tcrossprod",
+	"solve", "backsolve", "tbacksolve", "chol2inv",
+	"chol", "det", "diff", "diffinv",
 	NULL
 };
 
@@ -129,31 +132,31 @@ SEXP R_flint_fmpq_atomic(SEXP);
 SEXP R_flint_fmpq_ops2(SEXP, SEXP, SEXP, SEXP);
 SEXP R_flint_fmpq_ops1(SEXP, SEXP, SEXP);
 
-SEXP R_flint_mag_initialize(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP R_flint_mag_initialize(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP R_flint_mag_atomic(SEXP);
 SEXP R_flint_mag_format(SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP R_flint_mag_ops2(SEXP, SEXP, SEXP, SEXP);
 SEXP R_flint_mag_ops1(SEXP, SEXP, SEXP);
 
-SEXP R_flint_arf_initialize(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP R_flint_arf_initialize(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP R_flint_arf_atomic(SEXP);
 SEXP R_flint_arf_format(SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP R_flint_arf_ops2(SEXP, SEXP, SEXP, SEXP);
 SEXP R_flint_arf_ops1(SEXP, SEXP, SEXP);
 
-SEXP R_flint_acf_initialize(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP R_flint_acf_initialize(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP R_flint_acf_part(SEXP, SEXP);
 SEXP R_flint_acf_atomic(SEXP);
 SEXP R_flint_acf_ops2(SEXP, SEXP, SEXP, SEXP);
 SEXP R_flint_acf_ops1(SEXP, SEXP, SEXP);
 
-SEXP R_flint_arb_initialize(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP R_flint_arb_initialize(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP R_flint_arb_part(SEXP, SEXP);
 SEXP R_flint_arb_atomic(SEXP);
 SEXP R_flint_arb_ops2(SEXP, SEXP, SEXP, SEXP);
 SEXP R_flint_arb_ops1(SEXP, SEXP, SEXP);
 
-SEXP R_flint_acb_initialize(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP R_flint_acb_initialize(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP R_flint_acb_part(SEXP, SEXP);
 SEXP R_flint_acb_atomic(SEXP);
 SEXP R_flint_acb_ops2(SEXP, SEXP, SEXP, SEXP);
@@ -163,6 +166,11 @@ SEXP R_flint_arb_const_pi(SEXP, SEXP);
 SEXP R_flint_arb_const_log2(SEXP, SEXP);
 SEXP R_flint_arb_const_log10(SEXP, SEXP);
 SEXP R_flint_arb_const_e(SEXP, SEXP);
+
+SEXP R_flint_arf_calc_rk(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+
+SEXP R_flint_arb_calc_integrate(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP R_flint_acb_calc_integrate(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 
 SEXP R_flint_arb_lambertw(SEXP, SEXP, SEXP, SEXP);
 SEXP R_flint_acb_lambertw(SEXP, SEXP, SEXP, SEXP, SEXP);
@@ -196,6 +204,7 @@ SEXP R_flint_acb_hypgeom_rgamma(SEXP, SEXP, SEXP);
 SEXP R_flint_arb_hypgeom_lgamma(SEXP, SEXP, SEXP);
 SEXP R_flint_acb_hypgeom_lgamma(SEXP, SEXP, SEXP);
 
+SEXP R_flint_arb_hypgeom_polygamma(SEXP, SEXP, SEXP, SEXP);
 SEXP R_flint_acb_hypgeom_polygamma(SEXP, SEXP, SEXP, SEXP);
 
 SEXP R_flint_arb_hypgeom_gamma_lower(SEXP, SEXP, SEXP, SEXP, SEXP);
@@ -267,27 +276,27 @@ static R_CallMethodDef CallEntries[] =
 	CALL_ENTRY(R_flint_fmpq_atomic, 1),
 	CALL_ENTRY(R_flint_fmpq_ops2, 4),
 	CALL_ENTRY(R_flint_fmpq_ops1, 3),
-	CALL_ENTRY(R_flint_mag_initialize, 6),
+	CALL_ENTRY(R_flint_mag_initialize, 7),
 	CALL_ENTRY(R_flint_mag_atomic, 1),
 	CALL_ENTRY(R_flint_mag_format, 5),
 	CALL_ENTRY(R_flint_mag_ops2, 4),
 	CALL_ENTRY(R_flint_mag_ops1, 3),
-	CALL_ENTRY(R_flint_arf_initialize, 6),
+	CALL_ENTRY(R_flint_arf_initialize, 8),
 	CALL_ENTRY(R_flint_arf_atomic, 1),
 	CALL_ENTRY(R_flint_arf_format, 5),
 	CALL_ENTRY(R_flint_arf_ops2, 4),
 	CALL_ENTRY(R_flint_arf_ops1, 3),
-	CALL_ENTRY(R_flint_acf_initialize, 8),
+	CALL_ENTRY(R_flint_acf_initialize, 10),
 	CALL_ENTRY(R_flint_acf_part, 2),
 	CALL_ENTRY(R_flint_acf_atomic, 1),
 	CALL_ENTRY(R_flint_acf_ops2, 4),
 	CALL_ENTRY(R_flint_acf_ops1, 3),
-	CALL_ENTRY(R_flint_arb_initialize, 8),
+	CALL_ENTRY(R_flint_arb_initialize, 9),
 	CALL_ENTRY(R_flint_arb_part, 2),
 	CALL_ENTRY(R_flint_arb_atomic, 1),
 	CALL_ENTRY(R_flint_arb_ops2, 4),
 	CALL_ENTRY(R_flint_arb_ops1, 3),
-	CALL_ENTRY(R_flint_acb_initialize, 8),
+	CALL_ENTRY(R_flint_acb_initialize, 9),
 	CALL_ENTRY(R_flint_acb_part, 2),
 	CALL_ENTRY(R_flint_acb_atomic, 1),
 	CALL_ENTRY(R_flint_acb_ops2, 4),
@@ -296,6 +305,9 @@ static R_CallMethodDef CallEntries[] =
 	CALL_ENTRY(R_flint_arb_const_log2, 2),
 	CALL_ENTRY(R_flint_arb_const_log10, 2),
 	CALL_ENTRY(R_flint_arb_const_e, 2),
+	CALL_ENTRY(R_flint_arf_calc_rk, 14),
+	CALL_ENTRY(R_flint_arb_calc_integrate, 9),
+	CALL_ENTRY(R_flint_acb_calc_integrate, 9),
 	CALL_ENTRY(R_flint_arb_lambertw, 4),
 	CALL_ENTRY(R_flint_acb_lambertw, 5),
 	CALL_ENTRY(R_flint_arb_dirichlet_zeta, 3),
@@ -317,6 +329,7 @@ static R_CallMethodDef CallEntries[] =
 	CALL_ENTRY(R_flint_acb_hypgeom_rgamma, 3),
 	CALL_ENTRY(R_flint_arb_hypgeom_lgamma, 3),
 	CALL_ENTRY(R_flint_acb_hypgeom_lgamma, 3),
+	CALL_ENTRY(R_flint_arb_hypgeom_polygamma, 4),
 	CALL_ENTRY(R_flint_acb_hypgeom_polygamma, 4),
 	CALL_ENTRY(R_flint_arb_hypgeom_gamma_lower, 5),
 	CALL_ENTRY(R_flint_acb_hypgeom_gamma_lower, 5),
@@ -334,6 +347,7 @@ void attribute_visible R_init_flint(DllInfo *info)
 	R_registerRoutines(info, NULL, CallEntries, NULL, NULL);
 	R_useDynamicSymbols(info, FALSE);
 	R_forceSymbols(info, TRUE);
+	R_flint_namespace        = R_FindNamespace(Rf_mkString("flint"));
 	R_flint_symbol_missing   = Rf_install(".__WAS_MISSING__.");
 	R_flint_symbol_dot_data  = Rf_install(".Data");
 	R_flint_symbol_dot_xdata = Rf_install(".xData");

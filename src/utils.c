@@ -8,6 +8,11 @@ void CLEAR_ATTRIB(SEXP s)
 	UNSET_S4_OBJECT(s);
 	return;
 }
+
+SEXP R_ClosureEnv(SEXP s)
+{
+	return CLOENV(s);
+}
 #endif
 
 char *R_alloc_snprintf(size_t n, const char *format, ...)
@@ -22,10 +27,38 @@ char *R_alloc_snprintf(size_t n, const char *format, ...)
 
 SEXP newObject(const char *what)
 {
-	SEXP class = PROTECT(R_do_MAKE_CLASS(what)),
-		object = R_do_new_object(class);
+	static SEXP s_getClass = NULL;
+	if (!s_getClass)
+		s_getClass = Rf_install("getClass");
+	SEXP t;
+	PROTECT(t = Rf_mkString(what));
+	PROTECT(t = Rf_lang4(s_getClass, t, R_MissingArg, R_flint_namespace));
+	PROTECT(t = Rf_eval(t, R_flint_namespace));
+	t = R_do_new_object(t);
+	UNPROTECT(3);
+	return t;
+}
+
+SEXP newFlint(R_flint_class_t class, void *p, mp_limb_t n)
+{
+	R_CFinalizer_t f;
+	const char *what;
+
+#define TEMPLATE(name, elt_t, xptr_t, yptr_t) \
+	do { \
+		p = (n && p) ? p : (n) ? flint_calloc(n, sizeof(elt_t)) : 0; \
+		f = (R_CFinalizer_t) &R_flint_##name##_finalize; \
+		what = #name; \
+	} while (0)
+
+	R_FLINT_SWITCH(class, TEMPLATE);
+
+#undef TEMPLATE
+
+	SEXP ans = PROTECT(newObject(what));
+	R_flint_set(ans, p, n, f);
 	UNPROTECT(1);
-	return object;
+	return ans;
 }
 
 SEXPTYPE checkType(SEXP object, SEXPTYPE *valid, const char *where)
@@ -162,7 +195,7 @@ mp_limb_t validLength(SEXP length, SEXP dim, mp_limb_t dft)
 			if (d[i] > UWORD_MAX / l)
 				Rf_error(_("product of '%s' exceeds maximum %llu"),
 				         "dim", (unsigned long long int) UWORD_MAX);
-			l *= (unsigned int) d[i];
+			l *= (mp_limb_t) d[i];
 		}
 		return l;
 	}
@@ -367,7 +400,7 @@ void setDDNN(SEXP z, SEXP dim, SEXP dimnames, SEXP names)
 }
 
 void setDDNN2(SEXP z, SEXP x, SEXP y,
-              mp_limb_t nz, mp_limb_t nx, mp_limb_t ny, int mop)
+              mp_limb_t nz, mp_limb_t nx, mp_limb_t ny, int info)
 {
 	SEXP (*setz)(SEXP, SEXP, SEXP) =
 		(Rf_isS4(z)) ? &R_do_slot_assign : &Rf_setAttrib;
@@ -378,7 +411,7 @@ void setDDNN2(SEXP z, SEXP x, SEXP y,
 	SEXP ax, ay;
 	PROTECT(ax = getx(x, R_DimSymbol));
 	PROTECT(ay = gety(y, R_DimSymbol));
-	if (mop < 0) {
+	if (info < 0) {
 
 	if (ax != R_NilValue && (ny > 0 || ay != R_NilValue)) {
 		setz(z, R_DimSymbol, ax);
@@ -406,7 +439,7 @@ void setDDNN2(SEXP z, SEXP x, SEXP y,
 
 	} else {
 
-	int tx = (mop & 1) != 0, ty = (mop & 2) != 0;
+	int tx = (info & 1) != 0, ty = (info & 2) != 0;
 
 	SEXP dim = PROTECT(Rf_allocVector(INTSXP, 2));
 	int *dz = INTEGER(dim);
@@ -482,7 +515,7 @@ void setDDNN1(SEXP z, SEXP x)
 }
 
 int checkConformable(SEXP x, SEXP y,
-                     mp_limb_t nx, mp_limb_t ny, int mop, int *dz)
+                     mp_limb_t nx, mp_limb_t ny, int info, int *dz)
 {
 	SEXP (*getx)(SEXP, SEXP) =
 		(Rf_isS4(x)) ? &R_do_slot : &Rf_getAttrib;
@@ -491,7 +524,7 @@ int checkConformable(SEXP x, SEXP y,
 	SEXP ax, ay;
 	PROTECT(ax = getx(x, R_DimSymbol));
 	PROTECT(ay = gety(y, R_DimSymbol));
-	if (mop < 0) {
+	if (info < 0) {
 
 	R_xlen_t n;
 	if (ax != R_NilValue && ay != R_NilValue &&
@@ -503,11 +536,11 @@ int checkConformable(SEXP x, SEXP y,
 		Rf_error(_("non-array argument length exceeds array argument length"));
 	if (nx > 0 && ny > 0 && ((nx < ny) ? ny % nx : nx % ny))
 		Rf_warning(_("longer argument length is not a multiple of shorter argument length"));
-	mop = -1;
+	info = -1;
 
 	} else {
 
-	int tx = (mop & 1) != 0, ty = (mop & 2) != 0, sq = (mop & 4) != 0;
+	int tx = (info & 1) != 0, ty = (info & 2) != 0, sq = (info & 4) != 0;
 
 	if ((ax != R_NilValue && XLENGTH(ax) != 2) ||
 	    (ay != R_NilValue && XLENGTH(ay) != 2))
@@ -527,7 +560,7 @@ int checkConformable(SEXP x, SEXP y,
 			Rf_error(_("non-conformable arguments"));
 		if (!ty) ty = k == 1;
 	} else if (ay != R_NilValue || (ax == R_NilValue && ty)) {
-		int k = (ay != R_NilValue) ? INTEGER_RO(ay)[ ty] : (int) ny;
+		int k = (ay != R_NilValue) ? INTEGER_RO(ay)[ ty] :        1;
 		if ((tx) ? k != nx : k != 1 && k != nx)
 			Rf_error(_("non-conformable arguments"));
 		if (!tx) tx = k != 1;
@@ -543,22 +576,22 @@ int checkConformable(SEXP x, SEXP y,
 		else
 			Rf_error(_("non-conformable arguments"));
 	}
-	mop = (sq << 2) | (ty << 1) | tx;
+	info = (sq << 2) | (ty << 1) | tx;
 
 	dz[0] = (ax == R_NilValue) ? ((tx) ? 1 : (int) nx) : INTEGER_RO(ax)[ tx];
 	dz[1] = (ay == R_NilValue) ? ((ty) ? (int) ny : 1) : INTEGER_RO(ay)[!ty];
 	dz[2] = (ax == R_NilValue) ? ((tx) ? (int) nx : 1) : INTEGER_RO(ax)[!tx];
 
-	if (dz[0] > 0 && dz[1] > UWORD_MAX / dz[0])
-		Rf_error(_("value length would exceed maximum %llu"),
+	if (dz[0] > 0 && dz[1] > UWORD_MAX / (mp_limb_t) dz[0])
+		Rf_error(_("length would exceed maximum %llu"),
 		         (unsigned long long int) UWORD_MAX);
 
 	}
 	UNPROTECT(2);
-	return mop;
+	return info;
 }
 
-mpfr_prec_t asPrec(SEXP prec, const char *where)
+slong asPrec(SEXP prec, const char *where)
 {
 	if (prec == R_NilValue) {
 		static SEXP tag = NULL;
@@ -585,7 +618,16 @@ mpfr_prec_t asPrec(SEXP prec, const char *where)
 #else
 		    s[0] < 0x1.0p+31)
 #endif
-			return (mpfr_prec_t) s[0];
+			return (slong) s[0];
+		break;
+	}
+	case OBJSXP:
+	{
+		if (R_flint_get_class(prec) == R_FLINT_CLASS_SLONG) {
+		const slong *s = R_flint_get_pointer(prec);
+		if (R_flint_get_length(prec) >= 1 && s[0] >= 1)
+			return s[0];
+		}
 		break;
 	}
 	}
@@ -593,33 +635,84 @@ mpfr_prec_t asPrec(SEXP prec, const char *where)
 	return 0;
 }
 
-mpfr_rnd_t asRnd(SEXP rnd, const char *where)
+mpfr_prec_t mpfrPrec(slong prec)
+{
+	if (prec < MPFR_PREC_MIN)
+		Rf_error(_("'%s' is less than MPFR minimum %lld"),
+		         "prec", (long long int) MPFR_PREC_MIN);
+	if (prec > MPFR_PREC_MAX)
+		Rf_error(_("'%s' is greater than MPFR maximum %lld"),
+		         "prec", (long long int) MPFR_PREC_MAX);
+	return (mpfr_prec_t) prec;
+}
+
+arf_rnd_t asRnd(SEXP rnd, int useNn, const char *where)
 {
 	if (rnd == R_NilValue) {
-		static SEXP tag = NULL;
-		if (!tag)
-			tag = Rf_install("flint.rnd");
-		rnd = Rf_GetOption1(tag);
+		static SEXP nm0 = NULL, nm1 = NULL;
+		if (!nm0)
+			nm0 = Rf_install("flint.rnd.mag");
+		if (!nm1)
+			nm1 = Rf_install("flint.rnd");
+		rnd = Rf_GetOption1((useNn) ? nm1 : nm0);
 		if (rnd == R_NilValue)
-			return MPFR_RNDN;
+			return (useNn) ? ARF_RND_NEAR : ARF_RND_UP;
 	}
 	if (TYPEOF(rnd) == STRSXP && XLENGTH(rnd) > 0 &&
-	    (rnd = STRING_ELT(rnd, 0)) != NA_STRING) {
+	    (rnd = STRING_ELT(rnd, 0)) != NA_STRING &&
+	    CHAR(rnd)[0] != '\0' && CHAR(rnd)[1] == '\0') {
 		switch (CHAR(rnd)[0]) {
 		case 'N': case 'n':
-			return MPFR_RNDN;
+			if (!useNn)
+			Rf_error(_("class \"%s\" does not support rounding to nearest"),
+			         "mag");
+			return ARF_RND_NEAR;
 		case 'Z': case 'z':
-			return MPFR_RNDZ;
+			return ARF_RND_DOWN;
 		case 'U': case 'u':
-			return MPFR_RNDU;
+			return ARF_RND_CEIL;
 		case 'D': case 'd':
-			return MPFR_RNDD;
+			return ARF_RND_FLOOR;
 		case 'A': case 'a':
-			return MPFR_RNDA;
+			return ARF_RND_UP;
 		}
 	}
-	Rf_error(_("invalid '%s' in '%s'"), "rnd", where);
-	return -1;
+	Rf_error(_("invalid '%s' in '%s'"), (useNn) ? "rnd" : "rnd.mag", where);
+	return (arf_rnd_t) -1;
+}
+
+mpfr_rnd_t mpfrRnd(arf_rnd_t rnd)
+{
+	switch (rnd) {
+	case ARF_RND_NEAR:
+		return MPFR_RNDN;
+	case ARF_RND_DOWN:
+		return MPFR_RNDZ;
+	case ARF_RND_CEIL:
+		return MPFR_RNDU;
+	case ARF_RND_FLOOR:
+		return MPFR_RNDD;
+	case ARF_RND_UP:
+		return MPFR_RNDA;
+	default:
+		Rf_error(_("should never happen ..."));
+		return (mpfr_rnd_t) -1;
+	}
+}
+
+int isRndZ(arf_rnd_t rnd)
+{
+	switch (rnd) {
+	case ARF_RND_DOWN:
+	case ARF_RND_FLOOR:
+		return 1;
+	case ARF_RND_CEIL:
+	case ARF_RND_UP:
+		return 0;
+	default:
+		Rf_error(_("should never happen ..."));
+		return -1;
+	}
 }
 
 int asBase(SEXP base, const char *where)
@@ -715,20 +808,48 @@ size_t strmatch(const char *s, const char **ss)
 	return 0;
 }
 
-int matrixop(size_t op)
+R_flint_ops2_t ops2match(const char *s)
+{
+	size_t pos = strmatch(s, R_flint_ops2);
+	return (pos) ? (int) (pos - 1) : R_FLINT_OPS2_INVALID;
+}
+
+R_flint_ops1_t ops1match(const char *s)
+{
+	size_t pos = strmatch(s, R_flint_ops1);
+	return (pos) ? (int) (pos - 1) : R_FLINT_OPS1_INVALID;
+}
+
+int ops2info(R_flint_ops2_t op)
 {
 	switch (op) {
-	case 16: /*        "%*%" */
+	case R_FLINT_OPS2_PROD:
 		return  0;
-	case 17: /*  "crossprod" */
+	case R_FLINT_OPS2_CROSSPROD:
 		return  1;
-	case 18: /* "tcrossprod" */
+	case R_FLINT_OPS2_TCROSSPROD:
 		return  2;
-	case 19: /*      "solve" */
-	case 20: /*  "backsolve" */
+	case R_FLINT_OPS2_SOLVE:
+	case R_FLINT_OPS2_BACKSOLVE:
 		return  5;
-	case 21: /* "tbacksolve" */
+	case R_FLINT_OPS2_TBACKSOLVE:
 		return  4;
+	default:
+		return -1;
+	}
+}
+
+int ops1info(R_flint_ops1_t op)
+{
+	switch (op) {
+	case R_FLINT_OPS1_ROWSUM:
+		return  1;
+	case R_FLINT_OPS1_COLSUM:
+		return  0;
+	case R_FLINT_OPS1_ROWMEAN:
+		return  3;
+	case R_FLINT_OPS1_COLMEAN:
+		return  2;
 	default:
 		return -1;
 	}

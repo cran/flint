@@ -1,7 +1,7 @@
 Package: flint
-Version: 0.1.2
+Version: 0.1.3
 VersionNote: sync configure.ac, inst/NEWS.Rd
-Date: 2025-10-10
+Date: 2025-12-15
 Title: Fast Library for Number Theory
 Description: 
 	An R interface to 'FLINT' <https://flintlib.org/>, a C library for
@@ -26,7 +26,7 @@ URL: https://github.com/jaganmn/flint
 BugReports: https://github.com/jaganmn/flint/issues
 Authors@R: 
 	c(person("Mikael", "Jagan",
-	         email = "jaganmn@mcmaster.ca",
+	         email = "jaganmn2@gmail.com",
 	         role = c("aut", "cre"),
 	         comment = c(ORCID = "0000-0002-3542-2938")),
 	  person("Martin", "Maechler",
@@ -38,10 +38,10 @@ Enhances: Rmpfr, gmp
 SystemRequirements: flint (>= 3), mpfr (>= 3.1), gmp
 SystemRequirementsNote: purely informational as we use configure tests
 NeedsCompilation: yes
-Packaged: 2025-10-10 18:32:23 UTC; mikael
+Packaged: 2025-12-15 18:40:15 UTC; mikael
 Author: Mikael Jagan [aut, cre] (ORCID:
     <https://orcid.org/0000-0002-3542-2938>),
   Martin Maechler [ctb] (ORCID: <https://orcid.org/0000-0002-8685-9910>)
-Maintainer: Mikael Jagan <jaganmn@mcmaster.ca>
+Maintainer: Mikael Jagan <jaganmn2@gmail.com>
 Repository: CRAN
-Date/Publication: 2025-10-10 22:50:20 UTC
+Date/Publication: 2025-12-18 09:00:02 UTC

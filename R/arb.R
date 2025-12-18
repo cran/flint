@@ -118,7 +118,7 @@ setMethod("Ops",
 setMethod("Ops",
           c(e1 = "arb", e2 = "arb"),
           function (e1, e2)
-              .Call(R_flint_arb_ops2, .Generic, e1, e2, list()))
+              .Call(R_flint_arb_ops2, .Generic, e1, e2, NULL))
 
 setMethod("Ops",
           c(e1 = "arb", e2 = "acb"),
@@ -166,7 +166,7 @@ setMethod("as.vector",
                      "pairlist" =, "list" =, "expression" =
                          .Call(R_flint_list, x, mode),
                      "symbol" =, "name" =, "character" =
-                         as.vector(format(x, digits = 15L, rnd = "N"), mode),
+                         as.vector(format(x, digits = 15L, digits.mag = 8L, rnd = "N", rnd.mag = "A"), mode),
                      as.vector(.Call(R_flint_arb_atomic, x), mode)))
 
 setMethod("backsolve",
@@ -244,17 +244,18 @@ setMethod("backsolve",
 setMethod("chol",
           c(x = "arb"),
           function (x, ...)
-              .Call(R_flint_arb_ops1, "chol", x, list()))
+              .Call(R_flint_arb_ops1, "chol", x, NULL))
 
 setMethod("chol2inv",
           c(x = "arb"),
           function (x, ...)
-              .Call(R_flint_arb_ops1, "chol2inv", x, list()))
+              .Call(R_flint_arb_ops1, "chol2inv", x, NULL))
 
 setAs("ANY", "arb",
       function (from)
           .Call(R_flint_arb_initialize, flintNew("arb"), from, NULL,
-                dim(from), dimnames(from), names(from), NULL, NULL))
+                dim(from), dimnames(from), names(from), NULL, NULL,
+                NULL))
 
 setMethod("colMeans",
           c(x = "arb"),
@@ -283,14 +284,30 @@ setMethod("determinant",
                         "det")
           })
 
+setMethod("diff",
+          c(x = "arb"),
+          function (x, lag = 1L, differences = 1L, ...)
+              .Call(R_flint_arb_ops1, "diff", x,
+                    list(as.integer(lag), as.integer(differences))))
+
+setMethod("diffinv",
+          c(x = "arb"),
+          function (x, lag = 1L, differences = 1L, xi, ...)
+              .Call(R_flint_arb_ops1, "diffinv", x,
+                    list(as.integer(lag), as.integer(differences),
+                         if (!missing(xi)) as(xi, "arb"))))
+
 setMethod("format",
           c(x = "arb"),
-          function (x, base = 10L, digits = NULL, digits.mag = NULL,
-                    sep = NULL, rnd = flintRnd(), ...) {
-              m <- format(Mid(x), base = base, digits = digits,
-                          sep = sep, rnd = rnd, ...)
-              r <- format(Rad(x), base = base, digits.mag = digits.mag,
-                          sep = sep, rnd = "A", ...)
+          function (x, base = 10L, sep = NULL,
+                    digits = NULL, digits.mag = NULL,
+                    rnd = NULL, rnd.mag = "A", ...) {
+              m <- format(Mid(x), base = base, sep = sep,
+                          digits = digits,
+                          rnd = rnd, ...)
+              r <- format(Rad(x), base = base, sep = sep,
+                          digits.mag = digits.mag,
+                          rnd.mag = rnd.mag, ...)
               m[] <- paste0("(", m, " +/- ", r, ")")
               m
           })
@@ -320,6 +337,18 @@ setMethod("is.unsorted",
           function (x, na.rm = FALSE, strictly = FALSE)
               stop(.error.notTotalOrder()))
 
+setMethod("isComplex",
+          c(x = "arb"),
+          function (x) FALSE)
+
+setMethod("isFloating",
+          c(x = "arb"),
+          function (x) TRUE)
+
+setMethod("isSigned",
+          c(x = "arb"),
+          function (x) TRUE)
+
 setMethod("log",
           c(x = "arb"),
           function (x, base, ...)
@@ -344,7 +373,7 @@ setMatrixOpsMethod(
           c(x = "arb", y = "ANY"),
           function (x, y) {
               if (.Generic != "%*%" && (missing(y) || is.null(y)))
-                  return(.Call(R_flint_arb_ops2, .Generic, x, x, list()))
+                  return(.Call(R_flint_arb_ops2, .Generic, x, x, NULL))
               g <- get(.Generic, mode = "function")
               switch(typeof(y),
                      "NULL" =, "raw" =, "logical" =, "integer" =, "double" =
@@ -394,7 +423,7 @@ setMatrixOpsMethod(
 setMatrixOpsMethod(
           c(x = "arb", y = "arb"),
           function (x, y)
-              .Call(R_flint_arb_ops2, .Generic, x, y, list()))
+              .Call(R_flint_arb_ops2, .Generic, x, y, NULL))
 
 setMatrixOpsMethod(
           c(x = "arb", y = "acb"),
@@ -435,7 +464,7 @@ setMethod("solve",
           c(a = "arb", b = "ANY"),
           function (a, b, ...) {
               if (missing(b))
-                  return(.Call(R_flint_arb_ops1, "solve", a, list()))
+                  return(.Call(R_flint_arb_ops1, "solve", a, NULL))
               switch(typeof(b),
                      "NULL" =, "raw" =, "logical" =, "integer" =, "double" =
                          solve(a, arb(b), ...),
@@ -484,7 +513,7 @@ setMethod("solve",
 setMethod("solve",
           c(a = "arb", b = "arb"),
           function (a, b, ...)
-              .Call(R_flint_arb_ops2, "solve", a, b, list()))
+              .Call(R_flint_arb_ops2, "solve", a, b, NULL))
 
 setMethod("solve",
           c(a = "arb", b = "acb"),

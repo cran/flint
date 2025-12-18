@@ -59,3 +59,41 @@ stopifnot(all.equal(L, L.)) # 'all.equal' recurses with dispatch
 validObject(u <- sum(ulong(1:2, names = c("a", "b"))))
 validObject(s <- range(slong.array(1:2, dim = c(2L, 2L))))
 stopifnot(identical(u, ulong(3L)), identical(s, slong(1:2)))
+
+
+## all.equal(check.class = FALSE) failed to detect numerical differences
+stopifnot(is.character(all.equal(0, arf(1), check.class = FALSE)))
+
+
+## tcrossprod(<vector>, <vector>) determined inner dimension incorrectly
+stopifnot(identical(fmpz(tcrossprod(1:6, 1:8)),
+                    ## below gave "non-conformable arguments":
+                    tcrossprod(fmpz(1:6), fmpz(1:8))),
+          identical(fmpq(tcrossprod(1:6, 1:6)),
+                    ## below could trigger a segfault:
+                    tcrossprod(fmpq(1:6), fmpq(1:6))))
+
+
+## names(c(...)) was constructed incorrectly
+x <- 1L
+y <- 1L:2L
+z <- `names<-`(1L:3L, c("z", "zz", "zzz"))
+stopifnot(identical(c(slong(), a = x, b = y, c = z),
+                    slong(c(a = x, b = y, c = z))))
+
+
+## Arg(x) gave sign(x) * pi for 'x' of class 'mag', 'arf', 'arb'
+stopifnot(all.equal(Arg(mag(c(    0, 1))), mag(c(    0, 0))),
+          all.equal(Arg(arf(c(-1, 0, 1))), arf(c(pi, 0, 0))),
+          all.equal(Arg(arb(c(-1, 0, 1))), arb(c(pi, 0, 0))))
+
+
+## 0/0, Inf/Inf returned Inf for operands of class 'mag'
+stopifnot(tryCatch(mag(  0)/mag(  0), error = function (e) TRUE),
+          tryCatch(mag(Inf)/mag(Inf), error = function (e) TRUE))
+
+
+## diag(x) <- value assigned to entries in the first row
+x <- slong.array(0L, c(4L, 6L))
+diag(x) <- slong(1L)
+stopifnot(identical(print(x), slong(diag(1L, 4L, 6L))))

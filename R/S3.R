@@ -42,6 +42,14 @@ function (x, ...)
 function (x, logarithm = TRUE, ...)
     determinant(x, logarithm = logarithm, ...)
 
+.S3.diff.flint <-
+function (x, ...)
+    diff(x, ...)
+
+.S3.diffinv.flint <-
+function (x, ...)
+    diffinv(x, ...)
+
 .S3.duplicated.flint <-
 function (x, incomparables = FALSE, ...)
     duplicated(x, incomparables = incomparables, ...)
@@ -74,6 +82,10 @@ function (x)
 function (x, ...)
     print(x, ...)
 
+.S3.qr.flint <-
+function (x, ...)
+    qr(x, ...)
+
 .S3.quantile.flint <-
 function (x, ...)
     quantile(x, ...)
@@ -85,6 +97,10 @@ function (x, times)
 .S3.rep_len.flint <-
 function (x, length.out)
     rep_len(x, length.out)
+
+.S3.scale.flint <-
+function (x, center = TRUE, scale = TRUE)
+    scale(x, center = center, scale = scale)
 
 .S3.seq.flint <-
 function (...)

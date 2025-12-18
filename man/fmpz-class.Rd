@@ -62,6 +62,8 @@
 \alias{crossprod,fmpz,acb-method}
 \alias{det,fmpz-method}
 \alias{determinant,fmpz-method}
+\alias{diff,fmpz-method}
+\alias{diffinv,fmpz-method}
 \alias{is.finite,fmpz-method}
 \alias{is.infinite,fmpz-method}
 \alias{is.na,fmpz-method}
@@ -169,10 +171,10 @@ fmpz(x, length=)}
 }
 \section{Methods}{
   \describe{
-    \item{\code{!}}{
+    \item{\code{\link{!}}}{
       \code{signature(x = "fmpz")}:\cr
-      equivalent to (but faster than) \code{x == 0}.}
-    \item{\code{\%*\%}, \code{crossprod}, \code{tcrossprod}}{
+      equivalent to (but faster than) \code{x == 0L}.}
+    \item{\code{\link{\%*\%}}, \code{\link{crossprod}}, \code{\link{tcrossprod}}}{
       \code{signature(x = "fmpz", y = "fmpz")}:\cr
       \code{signature(x = "fmpz", y = "ANY")}:\cr
       \code{signature(x = "ANY", y = "fmpz")}:\cr
@@ -183,28 +185,28 @@ fmpz(x, length=)}
       necessary and must be conformable (have compatible dimensions).
       Non-array operands of length \code{k} are handled as 1-by-\code{k}
       or \code{k}-by-1 matrices depending on the call.}
-    \item{\code{+}}{
+    \item{\code{\link{+}}}{
       \code{signature(e1 = "fmpz", e2 = "missing")}:\cr
       returns a copy of the argument.}
-    \item{\code{-}}{
+    \item{\code{\link{-}}}{
       \code{signature(e1 = "fmpz", e2 = "missing")}:\cr
       returns the negation of the argument.}
-    \item{\code{Complex}}{
+    \item{\code{\link[methods]{Complex}}}{
       \code{signature(z = "fmpz")}:\cr
       mathematical functions of one argument; see
       \code{\link[methods]{S4groupGeneric}}.  Member functions requiring
       promotion to a floating-point type may not be implemented.}
-    \item{\code{Math}}{
+    \item{\code{\link[methods]{Math}}}{
       \code{signature(x = "fmpz")}:\cr
       mathematical functions of one argument; see
       \code{\link[methods]{S4groupGeneric}}.  Member functions requiring
       promotion to a floating-point type may not be implemented.}
-    \item{\code{Math2}}{
+    \item{\code{\link[methods]{Math2}}}{
       \code{signature(x = "fmpz")}:\cr
       decimal rounding according to a second argument \code{digits}; see
       \code{\link[methods]{S4groupGeneric}}.  There are just two member
       member functions: \code{\link{round}}, \code{\link{signif}}.}
-    \item{\code{Ops}}{
+    \item{\code{\link[methods]{Ops}}}{
       \code{signature(e1 = "fmpz", e2 = "fmpz")}:\cr
       \code{signature(e1 = "fmpz", e2 = "ANY")}:\cr
       \code{signature(e1 = "ANY", e2 = "fmpz")}:\cr
@@ -214,18 +216,18 @@ fmpz(x, length=)}
       \code{\linkS4class{flint}}.  Operands are promoted as necessary.
       Array operands must be conformable (have identical dimensions).
       Non-array operands are recycled.}
-    \item{\code{Summary}}{
+    \item{\code{\link[methods]{Summary}}}{
       \code{signature(x = "fmpz")}:\cr
       univariate summary statistics; see
       \code{\link[methods]{S4groupGeneric}}.  The return value is a
       logical vector of length 1 (\code{any}, \code{all}) or an
       \code{fmpz} vector of length 1 or 2 (\code{sum}, \code{prod},
       \code{min}, \code{max}, \code{range}).}
-    \item{\code{anyNA}}{
+    \item{\code{\link{anyNA}}}{
       \code{signature(x = "fmpz")}:\cr
       returns \code{FALSE}, as \code{fmpz} has no representation for
       \code{NaN}.}
-    \item{\code{as.vector}}{
+    \item{\code{\link{as.vector}}}{
       \code{signature(x = "fmpz")}:\cr
       returns \code{as.vector(y, mode)}, where \code{y} is a double
       vector containing the result of converting each element of
@@ -239,7 +241,7 @@ fmpz(x, length=)}
       \code{"list"}, and \code{"expression"}, which are not
       \dQuote{number-like}, is handled specially.  See also
       \code{\link{asVector}}.}
-    \item{\code{backsolve}}{
+    \item{\code{\link{backsolve}}}{
       \code{signature(r = "fmpz", x = "fmpz")}:\cr
       \code{signature(r = "fmpz", x = "ANY")}:\cr
       \code{signature(r = "ANY", x = "fmpz")}:\cr
@@ -257,74 +259,84 @@ fmpz(x, length=)}
       If \code{r} and (if not missing) \code{x} are both formally
       rational, then the solution is exact and the return value is an
       \code{\linkS4class{fmpq}} matrix.}
-    \item{\code{chol}}{
+    \item{\code{\link{chol}}}{
       \code{signature(x = "fmpz")}:\cr
       coerces \code{x} to class \code{\linkS4class{arf}} and
       dispatches.}
-    \item{\code{chol2inv}}{
+    \item{\code{\link{chol2inv}}}{
       \code{signature(x = "fmpz")}:\cr
       returns the inverse of the positive definite matrix whose upper
       triangular Cholesky factor is the upper triangular part of
       \code{x}.  The return value is the exact inverse, being computed
       as \code{tcrossprod(backsolve(x))}.}
-    \item{\code{coerce}}{
+    \item{\code{\link[methods]{coerce}}}{
       \code{signature(from = "ANY", to = "fmpz")}:\cr
       returns the value of \code{fmpz(from)}.}
-    \item{\code{colSums}}{
+    \item{\code{\link{colSums}}}{
       \code{signature(x = "fmpz")}:\cr
       returns an \code{fmpz} vector or array containing the column sums
       of \code{x}, defined as sums over dimensions \code{1:dims}.}
-    \item{\code{colMeans}}{
+    \item{\code{\link{colMeans}}}{
       \code{signature(x = "fmpz")}:\cr
       returns an \code{\linkS4class{fmpq}} vector or array containing
       the column means of \code{x}, defined as means over dimensions
       \code{1:dims}.}
-    \item{\code{det}}{
+    \item{\code{\link{det}}}{
       \code{signature(x = "fmpz")}:\cr
       returns the determinant of \code{x} as an \code{fmpz} vector of
       length 1.}
-    \item{\code{determinant}}{
+    \item{\code{\link{determinant}}}{
       \code{signature(x = "fmpz")}:\cr
       returns a list with components \code{modulus} and \code{sign}
-      specifying the determinant of \code{x}, following the \pkg{base}
-      function, hence see \code{\link{determinant}}.  Note that
-      \code{det(x)} and \code{determinant(x, logarithm = FALSE)} are
-      exact, but \code{determinant(x)} is not in general due to
-      rounding.}
-    \item{\code{format}}{
+      specifying the determinant of \code{x}, following the documented
+      behaviour of the \pkg{base} function.  Note that \code{det(x)} and
+      \code{determinant(x, logarithm = FALSE)} are exact, but
+      \code{determinant(x)} is not in general due to rounding.}
+    \item{\code{\link{diff}}}{
+      \code{signature(x = "fmpz")}:\cr
+      returns a vector storing lagged differences of the elements of
+      \code{x} or (if \code{x} is a matrix) a matrix storing lagged
+      differences of the rows of \code{x}, following the documented
+      behaviour of the S3 default method.}
+    \item{\code{\link[stats]{diffinv}}}{
+      \code{signature(x = "fmpz")}:\cr
+      returns the vector or matrix \code{y} such that
+      \code{x = diff(y, \dots)}, following the documented behaviour of
+      the S3 default method.}
+    \item{\code{\link{format}}}{
       \code{signature(x = "fmpz")}:\cr
       returns a character vector suitable for printing.  Optional
       arguments control the output; see \code{\link{format-methods}}.}
-    \item{\code{is.finite}}{
+    \item{\code{\link{is.finite}}}{
       returns a logical vector whose elements are all \code{TRUE}, as
       \code{fmpz} has no representation for \code{NaN}, \code{-Inf}, and
       \code{Inf}.}
-    \item{\code{is.infinite}, \code{is.na}, \code{is.nan}}{
+    \item{\code{\link{is.infinite}}, \code{\link{is.na}}, \code{\link{is.nan}}}{
       \code{signature(x = "fmpz")}:\cr
       returns a logical vector whose elements are all \code{FALSE}, as
       \code{fmpz} has no representation for \code{NaN}, \code{-Inf}, and
       \code{Inf}.}
-    \item{\code{is.unsorted}}{
+    \item{\code{\link{is.unsorted}}}{
       \code{signature(x = "fmpz")}:\cr
       returns a logical indicating if \code{x} is not sorted in
       nondecreasing order (increasing order if optional argument
       \code{strictly} is set to \code{TRUE}).}
-    \item{\code{mean}}{
+    \item{\code{\link{mean}}}{
       \code{signature(x = "fmpz")}:\cr
       returns the arithmetic mean.  An error is signaled if the argument
       length is 0, because the return type is \code{\linkS4class{fmpq}}
       which cannot represent the result of division by 0.}
-    \item{\code{rowSums}}{
+    \item{\code{\link{rowSums}}}{
       \code{signature(x = "fmpz")}:\cr
       returns an \code{fmpz} vector or array containing the row sums of
       \code{x}, defined as sums over dimensions
       \code{(dims+1):length(dim(x))}.}
-    \item{\code{rowMeans}}{
+    \item{\code{\link{rowMeans}}}{
       \code{signature(x = "fmpz")}:\cr
       returns an \code{\linkS4class{fmpq}} vector or array containing
       the row means of \code{x}, defined as means over dimensions
       \code{(dims+1):length(dim(x))}.}
-    \item{\code{solve}}{
+    \item{\code{\link{solve}}}{
       \code{signature(a = "fmpz", b = "fmpz")}:\cr
       \code{signature(a = "fmpz", b = "ANY")}:\cr
       \code{signature(a = "ANY", b = "fmpz")}:\cr
@@ -341,7 +353,9 @@ fmpz(x, length=)}
   }
 }
 \seealso{
-  Virtual class \code{\linkS4class{flint}}.
+  Virtual class \code{\linkS4class{flint}} and its nonvirtual subclass
+  \code{\linkS4class{fmpq}}, the latter representing rational numbers as
+  constrained pairs of \code{fmpz}.
 }
 \references{
   The \acronym{FLINT} documentation of the underlying \proglang{C}
@@ -350,5 +364,71 @@ fmpz(x, length=)}
 \examples{
 showClass("fmpz")
 showMethods(classes = "fmpz")
+
+    fmpz(0x1p+1023)  # with(.Machine, 2L^(double.max.exp-1L))
+try(fmpz(0x1p+1024)) # no representation for Inf after
+                     # floating-point overflow
+
+    fmpz(2L)^1024L  # powers are rational in general (signed exponent)
+Num(fmpz(2L)^1024L) # get the numerator
+
+## Allocation in bytes as a function of the most significant bit (B)
+##     B <= M - 2: a limb
+##     B >  M - 2: a limb, an 'mpz' struct, and N more limbs
+## where M := flintABI(), N := floor((B - 1)/M) + 1
+B <- seq_len(1024L)
+rle(vapply(as.list(Num(fmpz(2L)^(B - 1L))), flintSize, 0))
+
+## Conversion of decimal format strings
+fmpz(       "1234567890"        )
+fmpz(strrep("1234567890", 1L:6L))
+
+## Conversion of hexadecimal format strings
+hs <- paste0("-0x1", strrep("0", 256L))
+hz <- fmpz(hs)
+stopifnot(identical(hz, Num(-fmpz(2L)^1024L)),
+          identical(format(hz, base = 16L), sub("0x", "", hs)))
+
+## Exact 'sqrt' preserves class, hence requires perfect squares
+    sqrt(fmpz(81L))  # ok
+try(sqrt(fmpz(80L))) # error
+sqrt(arf(fmpz(80L))) # ok, thanks to coercion to floating-point type
+
+## Quotients are formally rational
+(J <- fmpz.array(0L:11L, c(6L, 2L), list(NULL, col = c("aa", "bb"))))
+J/2L
+J/1L
+try(J/0L) # NaN, -Inf, and Inf have no representation
+rowMeans(J)
+colMeans(J)
+summary(J)
+summary(J, quantile.type = 6L) # types 1 through 9 are all implemented
+
+## Floored integer division
+p <- fmpz(-127L)
+q <- c(-(3L:1L), 1L:3L)
+stopifnot(identical(p \%/\% q * q + p \%\% q, rep(p, 6L)))
+
+## Exact rational solution of linear systems with integer coefficients
+(A3 <- diag(c(0x1p+53, 1, 1)))
+try(solve(A3)) # system is computationally singular
+(A3 <- diag(Num(fmpz(2L)^c(53L, 0L, 0L))))
+(A3inv <- solve(A3))
+(I3 <- diag(1L, 3L, 3L))
+(b3 <- -1L:1L)
+stopifnot(identical(solve(A3, I3), A3inv),
+          identical(solve(A3, b3), A3inv \%*\% b3),
+          identical(solve(A3inv), fmpq(A3)),
+          identical(A3 \%*\% A3inv, fmpq(I3)))
+
+## Conversion to "double" rounds towards zero
+(z <- Num(fmpz(2L)^54L))
+(off <- fmpz(0L:8L))
+(offZ <- 4L * (off \%/\% 4L))
+stopifnot(identical(fmpz(as.double(z + off)) - z, offZ))
+
+## Conversion to "arf" is exact *by default*
+stopifnot(identical(fmpz(arf(z + off)) - z, off),
+          identical(fmpz(arf(z + off, prec = 53L, rnd = "Z")) - z, offZ))
 }
 \keyword{classes}

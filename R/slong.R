@@ -75,7 +75,7 @@ setMethod("Ops",
 setMethod("Ops",
           c(e1 = "slong", e2 = "slong"),
           function (e1, e2)
-              .Call(R_flint_slong_ops2, .Generic, e1, e2, list()))
+              .Call(R_flint_slong_ops2, .Generic, e1, e2, NULL))
 
 setMethod("Ops",
           c(e1 = "slong", e2 = "fmpz"),
@@ -246,6 +246,16 @@ setMethod("determinant",
           function (x, logarithm = TRUE, ...)
               determinant(fmpz(x), logarithm = logarithm, ...))
 
+setMethod("diff",
+          c(x = "slong"),
+          function (x, ...)
+              diff(fmpz(x), ...))
+
+setMethod("diffinv",
+          c(x = "slong"),
+          function (x, ...)
+              diffinv(fmpz(x), ...))
+
 setMethod("format",
           c(x = "slong"),
           function (x, base = 10L, ...)
@@ -275,6 +285,18 @@ setMethod("is.unsorted",
           c(x = "slong"),
           function (x, na.rm = FALSE, strictly = FALSE)
               .Call(R_flint_slong_ops1, "is.unsorted", x, list(NULL, as.logical(strictly))))
+
+setMethod("isComplex",
+          c(x = "slong"),
+          function (x) FALSE)
+
+setMethod("isFloating",
+          c(x = "slong"),
+          function (x) FALSE)
+
+setMethod("isSigned",
+          c(x = "slong"),
+          function (x) TRUE)
 
 setMatrixOpsMethod(
           c(x = "ANY", y = "ulong"),

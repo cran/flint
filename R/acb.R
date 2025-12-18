@@ -66,10 +66,10 @@ setMethod("Mid<-",
                   stop(gettextf("length of '%s' [%.0f] is not equal to 1 or length of '%s' [%.0f]",
                                 "value", nv, "x", nx),
                        domain = NA)
-              ans <- acb(real = arb(mid = Re(value),
-                                    rad = Rad(Re(x))),
-                         imag = arb(mid = Im(value),
-                                    rad = Rad(Im(x))))
+              ans <- acb(real = arb(mid = Real(value),
+                                    rad = Rad(Real(x))),
+                         imag = arb(mid = Imag(value),
+                                    rad = Rad(Imag(x))))
               ans@dim <- x@dim
               ans@dimnames <- x@dimnames
               ans@names <- x@names
@@ -143,7 +143,7 @@ setMethod("Ops",
 setMethod("Ops",
           c(e1 = "acb", e2 = "acb"),
           function (e1, e2)
-              .Call(R_flint_acb_ops2, .Generic, e1, e2, list()))
+              .Call(R_flint_acb_ops2, .Generic, e1, e2, NULL))
 
 setMethod("Real",
           c(z = "acb"),
@@ -186,7 +186,7 @@ setMethod("as.vector",
                      "pairlist" =, "list" =, "expression" =
                          .Call(R_flint_list, x, mode),
                      "symbol" =, "name" =, "character" =
-                         as.vector(format(x, digits = 15L, rnd = "N"), mode),
+                         as.vector(format(x, digits = 15L, digits.mag = 8L, rnd = "N", rnd.mag = "A"), mode),
                      as.vector(.Call(R_flint_acb_atomic, x), mode)))
 
 setMethod("backsolve",
@@ -260,17 +260,18 @@ setMethod("backsolve",
 setMethod("chol",
           c(x = "acb"),
           function (x, ...)
-              .Call(R_flint_acb_ops1, "chol", x, list()))
+              .Call(R_flint_acb_ops1, "chol", x, NULL))
 
 setMethod("chol2inv",
           c(x = "acb"),
           function (x, ...)
-              .Call(R_flint_acb_ops1, "chol2inv", x, list()))
+              .Call(R_flint_acb_ops1, "chol2inv", x, NULL))
 
 setAs("ANY", "acb",
       function (from)
           .Call(R_flint_acb_initialize, flintNew("acb"), from, NULL,
-                dim(from), dimnames(from), names(from), NULL, NULL))
+                dim(from), dimnames(from), names(from), NULL, NULL,
+                NULL))
 
 setMethod("colMeans",
           c(x = "acb"),
@@ -299,16 +300,30 @@ setMethod("determinant",
                         "det")
           })
 
+setMethod("diff",
+          c(x = "acb"),
+          function (x, lag = 1L, differences = 1L, ...)
+              .Call(R_flint_acb_ops1, "diff", x,
+                    list(as.integer(lag), as.integer(differences))))
+
+setMethod("diffinv",
+          c(x = "acb"),
+          function (x, lag = 1L, differences = 1L, xi, ...)
+              .Call(R_flint_acb_ops1, "diffinv", x,
+                    list(as.integer(lag), as.integer(differences),
+                         if (!missing(xi)) as(xi, "acb"))))
+
 setMethod("format",
           c(x = "acb"),
-          function (x, base = 10L, digits = NULL, digits.mag = NULL,
-                    sep = NULL, rnd = flintRnd(), ...) {
-              r <- format(Real(x), base = base,
+          function (x, base = 10L, sep = NULL,
+                    digits = NULL, digits.mag = NULL,
+                    rnd = NULL, rnd.mag = "A", ...) {
+              r <- format(Real(x), base = base, sep = sep,
                           digits = digits, digits.mag = digits.mag,
-                          sep = sep, rnd = rnd, ...)
-              i <- format(Imag(x), base = base,
+                          rnd = rnd, rnd.mag = rnd.mag, ...)
+              i <- format(Imag(x), base = base, sep = sep,
                           digits = digits, digits.mag = digits.mag,
-                          sep = sep, rnd = rnd, ...)
+                          rnd = rnd, rnd.mag = rnd.mag, ...)
               r[] <- paste0(r, "+", i, "i")
               r
           })
@@ -338,6 +353,18 @@ setMethod("is.unsorted",
           function (x, na.rm = FALSE, strictly = FALSE)
               stop(.error.notTotalOrder()))
 
+setMethod("isComplex",
+          c(x = "acb"),
+          function (x) TRUE)
+
+setMethod("isFloating",
+          c(x = "acb"),
+          function (x) TRUE)
+
+setMethod("isSigned",
+          c(x = "acb"),
+          function (x) TRUE)
+
 setMethod("log",
           c(x = "acb"),
           function (x, base, ...)
@@ -360,7 +387,7 @@ setMatrixOpsMethod(
           c(x = "acb", y = "ANY"),
           function (x, y) {
               if (.Generic != "%*%" && (missing(y) || is.null(y)))
-                  return(.Call(R_flint_acb_ops2, .Generic, x, x, list()))
+                  return(.Call(R_flint_acb_ops2, .Generic, x, x, NULL))
               g <- get(.Generic, mode = "function")
               switch(typeof(y),
                      "NULL" =, "raw" =, "logical" =, "integer" =, "double" =, "complex" =
@@ -413,7 +440,7 @@ setMatrixOpsMethod(
 setMatrixOpsMethod(
           c(x = "acb", y = "acb"),
           function (x, y)
-              .Call(R_flint_acb_ops2, .Generic, x, y, list()))
+              .Call(R_flint_acb_ops2, .Generic, x, y, NULL))
 
 setMethod("mean",
           c(x = "acb"),
@@ -447,7 +474,7 @@ setMethod("solve",
           c(a = "acb", b = "ANY"),
           function (a, b, ...) {
               if (missing(b))
-                  return(.Call(R_flint_acb_ops1, "solve", a, list()))
+                  return(.Call(R_flint_acb_ops1, "solve", a, NULL))
               switch(typeof(b),
                      "NULL" =, "raw" =, "logical" =, "integer" =, "double" =, "complex" =
                          solve(a, acb(b), ...),
@@ -499,7 +526,7 @@ setMethod("solve",
 setMethod("solve",
           c(a = "acb", b = "acb"),
           function (a, b, ...)
-              .Call(R_flint_acb_ops2, "solve", a, b, list()))
+              .Call(R_flint_acb_ops2, "solve", a, b, NULL))
 
 setMethod("xtfrm",
           c(x = "acb"),

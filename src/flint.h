@@ -32,6 +32,7 @@
 #include <flint/acb.h>
 #include <flint/acb_mat.h>
 #include "revertnoreturn.h"
+#include "fallback.h"
 #include <Rconfig.h> /* R_INLINE, ENABLE_NLS */
 #include <R_ext/Arith.h> /* R_FINITE, ISNAN, ... */
 #include <R_ext/Complex.h> /* Rcomplex */
@@ -53,6 +54,41 @@
 #if R_VERSION < R_Version(4, 4, 0)
 # define OBJSXP S4SXP
 #endif /* < 4.4.0 */
+
+#define R_FLINT_SWITCH(class, template) \
+do { \
+	switch (class) { \
+	case R_FLINT_CLASS_ULONG: \
+		template(ulong, ulong, const ulong *, ulong *); \
+		break; \
+	case R_FLINT_CLASS_SLONG: \
+		template(slong, slong, const slong *, slong *); \
+		break; \
+	case R_FLINT_CLASS_FMPZ: \
+		template(fmpz, fmpz, const fmpz *, fmpz *); \
+		break; \
+	case R_FLINT_CLASS_FMPQ: \
+		template(fmpq, fmpq, const fmpq *, fmpq *); \
+		break; \
+	case R_FLINT_CLASS_MAG: \
+		template(mag, mag_t, mag_srcptr, mag_ptr); \
+		break; \
+	case R_FLINT_CLASS_ARF: \
+		template(arf, arf_t, arf_srcptr, arf_ptr); \
+		break; \
+	case R_FLINT_CLASS_ACF: \
+		template(acf, acf_t, acf_srcptr, acf_ptr); \
+		break; \
+	case R_FLINT_CLASS_ARB: \
+		template(arb, arb_t, arb_srcptr, arb_ptr); \
+		break; \
+	case R_FLINT_CLASS_ACB: \
+		template(acb, acb_t, acb_srcptr, acb_ptr); \
+		break; \
+	default: \
+		Rf_error(_("should never happen ...")); \
+	} \
+} while (0)
 
 #define MIN2(a, b) \
 (((a) > (b)) ? (b)                    : (a))
@@ -93,22 +129,115 @@
 #define RECYCLE7(a, b, c, d, e, f, g) \
 (((a) && (b) && (c) && (d) && (e) && (f) && (g)) ? MAX7(a, b, c, d, e, f, g) : 0)
 
-#define WARNING_OOB_INTEGER(w) \
+#define FOR_RECYCLE0(j, n) \
+for (j = 0; \
+     j < n; \
+     ++j)
+#define FOR_RECYCLE1(j, n, ja, na) \
+for (j = 0, \
+     ja = 0; \
+     j < n; \
+     ++j, \
+     ja = (++ja == na) ? 0 : ja)
+#define FOR_RECYCLE2(j, n, ja, na, jb, nb) \
+for (j = 0, \
+     ja = 0, \
+     jb = 0; \
+     j < n; \
+     ++j, \
+     ja = (++ja == na) ? 0 : ja, \
+     jb = (++jb == nb) ? 0 : jb)
+#define FOR_RECYCLE3(j, n, ja, na, jb, nb, jc, nc) \
+for (j = 0, \
+     ja = 0, \
+     jb = 0, \
+     jc = 0; \
+     j < n; \
+     ++j, \
+     ja = (++ja == na) ? 0 : ja, \
+     jb = (++jb == nb) ? 0 : jb, \
+     jc = (++jc == nc) ? 0 : jc)
+#define FOR_RECYCLE4(j, n, ja, na, jb, nb, jc, nc, jd, nd) \
+for (j = 0, \
+     ja = 0, \
+     jb = 0, \
+     jc = 0, \
+     jd = 0; \
+     j < n; \
+     ++j, \
+     ja = (++ja == na) ? 0 : ja, \
+     jb = (++jb == nb) ? 0 : jb, \
+     jc = (++jc == nc) ? 0 : jc, \
+     jd = (++jd == nd) ? 0 : jd)
+#define FOR_RECYCLE5(j, n, ja, na, jb, nb, jc, nc, jd, nd, je, ne) \
+for (j = 0, \
+     ja = 0, \
+     jb = 0, \
+     jc = 0, \
+     jd = 0, \
+     je = 0; \
+     j < n; \
+     ++j, \
+     ja = (++ja == na) ? 0 : ja, \
+     jb = (++jb == nb) ? 0 : jb, \
+     jc = (++jc == nc) ? 0 : jc, \
+     jd = (++jd == nd) ? 0 : jd, \
+     je = (++je == ne) ? 0 : je)
+#define FOR_RECYCLE6(j, n, ja, na, jb, nb, jc, nc, jd, nd, je, ne, jf, nf) \
+for (j = 0, \
+     ja = 0, \
+     jb = 0, \
+     jc = 0, \
+     jd = 0, \
+     je = 0, \
+     jf = 0; \
+     j < n; \
+     ++j, \
+     ja = (++ja == na) ? 0 : ja, \
+     jb = (++jb == nb) ? 0 : jb, \
+     jc = (++jc == nc) ? 0 : jc, \
+     jd = (++jd == nd) ? 0 : jd, \
+     je = (++je == ne) ? 0 : je, \
+     jf = (++jf == nf) ? 0 : jf)
+#define FOR_RECYCLE7(j, n, ja, na, jb, nb, jc, nc, jd, nd, je, ne, jf, nf, jg, ng) \
+for (j = 0, \
+     ja = 0, \
+     jb = 0, \
+     jc = 0, \
+     jd = 0, \
+     je = 0, \
+     jf = 0, \
+     jg = 0; \
+     j < n; \
+     ++j, \
+     ja = (++ja == na) ? 0 : ja, \
+     jb = (++jb == nb) ? 0 : jb, \
+     jc = (++jc == nc) ? 0 : jc, \
+     jd = (++jd == nd) ? 0 : jd, \
+     je = (++je == ne) ? 0 : je, \
+     jf = (++jf == nf) ? 0 : jf, \
+     jg = (++jg == ng) ? 0 : jg)
+
+#define WARNING_OOB_INTEGER \
 do { \
-	if (w) { \
-		Rf_warning(_("NA introduced by coercion to range of \"%s\""), \
-		           "integer"); \
-		w = 0; \
-	} \
+	Rf_warning(_("NA introduced by coercion to range of \"%s\""), \
+	           "integer"); \
 } while (0)
 
-#define WARNING_OOB_DOUBLE(w) \
+#define WARNING_OOB_DOUBLE \
 do { \
-	if (w) { \
-		Rf_warning(_("-Inf or Inf introduced by coercion to range of \"%s\""), \
-		           "double"); \
-		w = 0; \
-	} \
+	Rf_warning(_("-Inf or Inf introduced by coercion to range of \"%s\""), \
+	           "double"); \
+} while (0)
+
+#define WARNING_LOST_IMAG \
+do { \
+	Rf_warning(_("imaginary parts discarded in conversion")); \
+} while (0)
+
+#define WARNING_LOST_RAD \
+do { \
+	Rf_warning(_("radii discarded in conversion")); \
 } while (0)
 
 #define ERROR_INVALID_TYPE(x, func) \
@@ -130,7 +259,7 @@ do { \
 #define ERROR_TOO_LONG(n, nmax) \
 do { \
 	if ((n) > (nmax)) \
-		Rf_error(_("value length would exceed maximum %llu"), \
+		Rf_error(_("length would exceed maximum %llu"), \
 		         (unsigned long long int) (nmax)); \
 } while (0)
 
@@ -167,7 +296,8 @@ mpfr_set_emax(__emax_old); \
 
 
 extern
-SEXP R_flint_symbol_missing,
+SEXP R_flint_namespace,
+	R_flint_symbol_missing,
 	R_flint_symbol_dot_data,
 	R_flint_symbol_dot_xdata,
 	R_flint_symbol_dim,
@@ -194,6 +324,108 @@ typedef enum {
 	R_FLINT_CLASS_INVALID = -1
 } R_flint_class_t;
 
+typedef enum {
+	R_FLINT_OPS2_ADD = 0, /*    x  +  y    */
+	R_FLINT_OPS2_SUB,     /*    x  -  y    */
+	R_FLINT_OPS2_MUL,     /*    x  *  y    */
+	R_FLINT_OPS2_DIV,     /*    x  /  y    */
+	R_FLINT_OPS2_POW,     /*    x  ^  y    */
+	R_FLINT_OPS2_FDR,     /*    x  %% y    */
+	R_FLINT_OPS2_FDQ,     /*    x %/% y    */
+	R_FLINT_OPS2_EQ,      /*    x  == y    */
+	R_FLINT_OPS2_NEQ,     /*    x  != y    */
+	R_FLINT_OPS2_L,       /*    x  <  y    */
+	R_FLINT_OPS2_LEQ,     /*    x  <= y    */
+	R_FLINT_OPS2_G,       /*    x  >  y    */
+	R_FLINT_OPS2_GEQ,     /*    x  >= y    */
+	R_FLINT_OPS2_AND,     /*    x  &  y    */
+	R_FLINT_OPS2_OR,      /*    x  |  y    */
+	R_FLINT_OPS2_PROD,       /*             x %*% y    */
+	R_FLINT_OPS2_CROSSPROD,  /*     crossprod(x, y)    */
+	R_FLINT_OPS2_TCROSSPROD, /*    tcrossprod(x, y)    */
+	R_FLINT_OPS2_SOLVE,      /*         solve(x, y)    */
+	R_FLINT_OPS2_BACKSOLVE,  /*     backsolve(x, y)    */
+	R_FLINT_OPS2_TBACKSOLVE, /*    tbacksolve(x, y)    */
+	R_FLINT_OPS2_INVALID = -1
+} R_flint_ops2_t;
+
+typedef enum {
+	R_FLINT_OPS1_PLUS = 0, /*                +z    */
+	R_FLINT_OPS1_MINUS,    /*                -z    */
+	R_FLINT_OPS1_ISNA,     /*          is.na(z)    */
+	R_FLINT_OPS1_ISNAN,    /*         is.nan(z)    */
+	R_FLINT_OPS1_ISINF,    /*    is.infinite(z)    */
+	R_FLINT_OPS1_ISNUM,    /*      is.finite(z)    */
+	R_FLINT_OPS1_NOT,      /*                !z    */
+	R_FLINT_OPS1_CONJ,     /*           Conj(z)    */
+	R_FLINT_OPS1_REAL,     /*             Re(z)    */
+	R_FLINT_OPS1_IMAG,     /*             Im(z)    */
+	R_FLINT_OPS1_MOD,      /*            Mod(z)    */
+	R_FLINT_OPS1_ARG,      /*            Arg(z)    */
+	R_FLINT_OPS1_ABS,      /*            abs(z)    */
+	R_FLINT_OPS1_SIGN,     /*           sign(z)    */
+	R_FLINT_OPS1_SQRT,     /*           sqrt(z)    */
+	R_FLINT_OPS1_FLOOR,    /*          floor(z)    */
+	R_FLINT_OPS1_CEILING,  /*        ceiling(z)    */
+	R_FLINT_OPS1_TRUNC,    /*          trunc(z)    */
+	R_FLINT_OPS1_CUMMIN,   /*         cummin(z)    */
+	R_FLINT_OPS1_CUMMAX,   /*         cummax(z)    */
+	R_FLINT_OPS1_CUMSUM,   /*         cumsum(z)    */
+	R_FLINT_OPS1_CUMPROD,  /*        cumprod(z)    */
+	R_FLINT_OPS1_LOG,      /*            log(z)    */
+	R_FLINT_OPS1_LOG2,     /*           log2(z)    */
+	R_FLINT_OPS1_LOG10,    /*          log10(z)    */
+	R_FLINT_OPS1_LOG1P,    /*          log1p(z)    */
+	R_FLINT_OPS1_EXP,      /*            exp(z)    */
+	R_FLINT_OPS1_EXPM1,    /*          expm1(z)    */
+	R_FLINT_OPS1_COS,      /*            cos(z)    */
+	R_FLINT_OPS1_COSPI,    /*          cospi(z)    */
+	R_FLINT_OPS1_ACOS,     /*           acos(z)    */
+	R_FLINT_OPS1_COSH,     /*           cosh(z)    */
+	R_FLINT_OPS1_ACOSH,    /*          acosh(z)    */
+	R_FLINT_OPS1_SIN,      /*            sin(z)    */
+	R_FLINT_OPS1_SINPI,    /*          sinpi(z)    */
+	R_FLINT_OPS1_ASIN,     /*           asin(z)    */
+	R_FLINT_OPS1_SINH,     /*           sinh(z)    */
+	R_FLINT_OPS1_ASINH,    /*          asinh(z)    */
+	R_FLINT_OPS1_TAN,      /*            tan(z)    */
+	R_FLINT_OPS1_TANPI,    /*          tanpi(z)    */
+	R_FLINT_OPS1_ATAN,     /*           atan(z)    */
+	R_FLINT_OPS1_TANH,     /*           tanh(z)    */
+	R_FLINT_OPS1_ATANH,    /*          atanh(z)    */
+	R_FLINT_OPS1_GAMMA,    /*          gamma(z)    */
+	R_FLINT_OPS1_LGAMMA,   /*         lgamma(z)    */
+	R_FLINT_OPS1_2GAMMA,   /*        digamma(z)    */
+	R_FLINT_OPS1_3GAMMA,   /*       trigamma(z)    */
+	R_FLINT_OPS1_ROUND,    /*          round(z)    */
+	R_FLINT_OPS1_SIGNIF,   /*         signif(z)    */
+	R_FLINT_OPS1_MIN,      /*            min(z)    */
+	R_FLINT_OPS1_MAX,      /*            max(z)    */
+	R_FLINT_OPS1_RANGE,    /*          range(z)    */
+	R_FLINT_OPS1_SUM,      /*            sum(z)    */
+	R_FLINT_OPS1_PROD,     /*           prod(z)    */
+	R_FLINT_OPS1_MEAN,     /*           mean(z)    */
+	R_FLINT_OPS1_ANY,      /*            any(z)    */
+	R_FLINT_OPS1_ALL,      /*            all(z)    */
+	R_FLINT_OPS1_ANYNA,    /*          anyNA(z)    */
+	R_FLINT_OPS1_ISUNS,    /*    is.unsorted(z)    */
+	R_FLINT_OPS1_ROWSUM,   /*        rowSums(z)    */
+	R_FLINT_OPS1_COLSUM,   /*        colSums(z)    */
+	R_FLINT_OPS1_ROWMEAN,  /*       rowMeans(z)    */
+	R_FLINT_OPS1_COLMEAN,  /*       colMeans(z)    */
+	R_FLINT_OPS1_CROSSPROD,  /*      crossprod(z)    */
+	R_FLINT_OPS1_TCROSSPROD, /*     tcrossprod(z)    */
+	R_FLINT_OPS1_SOLVE,      /*          solve(z)    */
+	R_FLINT_OPS1_BACKSOLVE,  /*      backsolve(z)    */
+	R_FLINT_OPS1_TBACKSOLVE, /*     tbacksolve(z)    */
+	R_FLINT_OPS1_CHOL2INV,   /*       chol2inv(z)    */
+	R_FLINT_OPS1_CHOL,       /*           chol(z)    */
+	R_FLINT_OPS1_DET,        /*            det(z)    */
+	R_FLINT_OPS1_DIFF,       /*           diff(z)    */
+	R_FLINT_OPS1_DIFFINV,    /*        diffinv(z)    */
+	R_FLINT_OPS1_INVALID = -1
+} R_flint_ops1_t;
+
 extern
 SEXPTYPE R_flint_sexptypes[8];
 
@@ -204,15 +436,17 @@ extern
 const char *R_flint_ops2[22];
 
 extern
-const char *R_flint_ops1[70];
+const char *R_flint_ops1[74];
 
 #if R_VERSION < R_Version(4, 5, 0)
-void CLEAR_ATTRIB(SEXP x);
+void CLEAR_ATTRIB(SEXP s);
+SEXP R_ClosureEnv(SEXP s);
 #endif
 
 char *R_alloc_snprintf(size_t, const char *, ...);
 
 SEXP newObject(const char *);
+SEXP newFlint(R_flint_class_t, void *, mp_limb_t);
 
 SEXPTYPE checkType(SEXP, SEXPTYPE *, const char *);
 const char *checkClass(SEXP, const char **, const char *);
@@ -230,8 +464,11 @@ void setDDNN1(SEXP, SEXP);
 
 int checkConformable(SEXP, SEXP, mp_limb_t, mp_limb_t, int, int *);
 
-mpfr_prec_t asPrec(SEXP, const char *);
-mpfr_rnd_t asRnd(SEXP, const char *);
+slong asPrec(SEXP, const char *);
+mpfr_prec_t mpfrPrec(slong);
+arf_rnd_t asRnd(SEXP, int, const char *);
+mpfr_rnd_t mpfrRnd(arf_rnd_t);
+int isRndZ(arf_rnd_t);
 int asBase(SEXP, const char *);
 size_t asDigits(SEXP, const char *);
 const char *asSep(SEXP, const char *);
@@ -240,7 +477,10 @@ void  ucopy(unsigned int *, const mp_limb_t *);
 void uucopy(mp_limb_t *, const unsigned int *);
 
 size_t strmatch(const char *, const char **);
-int matrixop(size_t);
+R_flint_ops2_t ops2match(const char *);
+R_flint_ops1_t ops1match(const char *);
+int ops2info(R_flint_ops2_t);
+int ops1info(R_flint_ops1_t);
 
 void *R_flint_get_pointer(SEXP);
 mp_limb_t R_flint_get_length(SEXP);

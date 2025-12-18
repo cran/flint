@@ -904,7 +904,7 @@ function (target, current,
         if (common == "mag")
             common <- "arf"
         target <- as(target, common)
-        current <- as(target, common)
+        current <- as(current, common)
     }
     if ((nt <- flintLengthAny(target)) != (nc <- flintLengthAny(current)))
         return(c(msg, gettextf("target length is %s, current length is %s",
@@ -1144,8 +1144,8 @@ setMethod("as.POSIXlt",
           function (x, tz = "", ...)
               as.POSIXlt(asVector(x, "vector", FALSE), tz = tz, ...))
 
-.init.asplit <-
-function () {
+.initAsplit <-
+function (where = topenv(parent.frame())) {
 suppressMessages(setGeneric("asplit"))
 if (getRversion() >= "4.5.0") {
 setMethod("asplit",
@@ -1156,8 +1156,9 @@ setMethod("asplit",
                   match(MARGIN, names(x@dimnames), 0L)
               else as.integer(MARGIN)
               .Call(R_flint_asplit, x, MARGIN, as.logical(drop))
-          })
-assign("asplit3", envir = topenv(parent.frame()), inherits = FALSE,
+          },
+          where = where)
+assign("asplit3", envir = where, inherits = FALSE,
        asplit)
 } else {
 setMethod("asplit",
@@ -1168,8 +1169,9 @@ setMethod("asplit",
                   match(MARGIN, names(x@dimnames), 0L)
               else as.integer(MARGIN)
               .Call(R_flint_asplit, x, MARGIN, FALSE)
-          })
-assign("asplit3", envir = topenv(parent.frame()), inherits = FALSE,
+          },
+          where = where)
+assign("asplit3", envir = where, inherits = FALSE,
        function (x, MARGIN, drop = FALSE) {
            ans <- asplit(x, MARGIN)
            if (drop)
@@ -1313,7 +1315,7 @@ setMethod("diag<-",
               if (length(d <- x@dim) != 2L)
                   stop(gettextf("'%s' is not a matrix", "x"),
                        domain = NA)
-              i <- ulong(1L) + ulong(d[1L]) * .Call(R_flint_ulong_seq, ulong(0L), ulong(min(d)), FALSE)
+              i <- ulong(1L) + (ulong(d[1L]) + ulong(1L)) * .Call(R_flint_ulong_seq, ulong(0L), ulong(min(d)), FALSE)
               x[i] <- value
               x
           })
@@ -1458,6 +1460,11 @@ setMethod("duplicated",
               ans
           })
 
+setMethod("eigen",
+          c(x = "flint"),
+          function (x, symmetric, only.values = FALSE, EISPACK = FALSE)
+              .NotYetImplemented())
+
 setMethod("findInterval",
           c(x = "flint"),
           function (x, vec,
@@ -1547,6 +1554,23 @@ setMethod("isSymmetric",
                                       tolerance = tol, ...))
           })
 
+.kronecker <- updateBody(.kronecker, as.array = asArray)
+environment(.kronecker) <- environment()
+
+setMethod("kronecker",
+          c(X =   "ANY", Y = "flint"),
+          .kronecker)
+
+setMethod("kronecker",
+          c(X = "flint", Y =   "ANY"),
+          .kronecker)
+
+setMethod("kronecker",
+          c(X = "flint", Y = "flint"),
+          .kronecker)
+
+rm(.kronecker)
+
 setMethod("length",
           c(x = "flint"),
           function (x)
@@ -1632,22 +1656,20 @@ setMethod("norm",
                   stop(gettextf("'%s' is not a matrix", "x"),
                        domain = NA)
               type <- substr(type, 1L, 1L)
-              max0 <-
-              function (x) {
+              norm0 <-
+              function (x, value) {
                   if (length(x))
-                      max(x)
-                  else flint(flintClass(x), length = 1L)
+                      value
+                  else flint(flintClass(abs(x)), length = 1L) # zero
               }
               switch(EXPR = type,
                      "1" =,
-                     "O" =, "o" = max0(colSums(abs(x))),
-                     "I" =, "i" = max0(rowSums(abs(x))),
+                     "O" =, "o" = norm0(x, max(colSums(abs(x)))),
+                     "I" =, "i" = norm0(x, max(rowSums(abs(x)))),
                      "F" =, "f" =,
                      "E" =, "e" = sqrt(sum(x * x)),
-                     "M" =, "m" = max0(abs(x)),
-                     "2" =
-                     stop(gettextf("norm type \"%s\" is not yet implemented", type),
-                          domain = NA),
+                     "M" =, "m" = norm0(x, max(abs(x))),
+                     "2" = norm0(x, svd(x, nu = 0L, nv = 0L)$d[1L]),
                      stop(gettextf("norm type \"%s\" is invalid", type),
                           domain = NA))
           })
@@ -1658,6 +1680,23 @@ setMethod("norm",
           c(x = "flint", type = "missing"),
           function (x, type, ...)
               norm(x, type = "O", ...))
+
+.outer <- updateBody(outer, as.vector = asVector)
+environment(.outer) <- environment()
+
+setMethod("outer",
+          c(X =   "ANY", Y = "flint"),
+          .outer)
+
+setMethod("outer",
+          c(X = "flint", Y =   "ANY"),
+          .outer)
+
+setMethod("outer",
+          c(X = "flint", Y = "flint"),
+          .outer)
+
+rm(.outer)
 
 setMethod("print",
           c(x = "flint"),
@@ -1682,7 +1721,7 @@ setMethod("print",
               }
               cat(msg, "\n", sep = "")
               n <- flintLength(x)
-              if (n > 0L) {
+              if (any(if (is.null(d)) n else d)) {
               if (is.null(max))
                   max <- getOption("max.print")
               max <- as.integer(max)
@@ -1751,6 +1790,11 @@ setMethod("print",
               }
               invisible(x)
           })
+
+setMethod("qr",
+          c(x = "flint"),
+          function (x, ...)
+              .NotYetImplemented())
 
 setMethod("quantile",
           c(x = "flint"),
@@ -1868,6 +1912,11 @@ setMethod("rbind2",
           function (x, y, ...)
               rbind.flint(x, y, deparse.level = 0L))
 
+setMethod("rcond",
+          c(x = "flint"),
+          function (x, norm, ...)
+              .NotYetImplemented())
+
 setMethod("rep",
           c(x = "flint"),
           function (x, times, length.out, each, ...) {
@@ -1890,9 +1939,58 @@ setMethod("rep_len",
           function (x, length.out)
               .Call(R_flint_rep_lengthout, x, as(length.out, "ulong"), FALSE))
 
+setMethod("scale",
+          c(x = "flint"),
+          function (x, center = TRUE, scale = TRUE) {
+              x <- asMatrix(x)
+              d <- x@dim
+              m <- d[1L]
+              n <- d[2L]
+              if (is.logical(center)) {
+                  if (center) {
+                      center <- colMeans(x, na.rm = TRUE)
+                      x <- x - rep(center, each = m)
+                  }
+              } else {
+                  if (length(center) == n)
+                      x <- x - rep(center, each = m)
+                  else stop(gettextf("length of '%s' does not equal number of columns of '%s'",
+                                     "center", "x"),
+                            domain = NA)
+              }
+              if (is.logical(scale)) {
+                  if (scale) {
+                      scale <-
+                      do.call(c.flint,
+                              lapply((0L:(n - 1L)) * m,
+                                     function (h) {
+                                         y <- if (m) x[(h + 1L):(h + m)] else x[0L]
+                                         sqrt(sum(y * y, na.rm = TRUE)/
+                                              max(1L, m - sum(is.na(y)) - 1L))
+                                     }))
+                      x <- x/rep(scale, each = m)
+                  }
+              } else {
+                  if (length(scale) == n)
+                      x <- x/rep(scale, each = m)
+                  else stop(gettextf("length of '%s' does not equal number of columns of '%s'",
+                                     "scale", "x"),
+                            domain = NA)
+              }
+              if (!is.logical(center))
+                  attr(x, "scaled:center") <- center
+              if (!is.logical(scale))
+                  attr(x, "scaled:scale") <- scale
+              x
+          })
+
 setMethod("seq",
           c("..." = "flint"),
           function (from, to, by, length.out, along.with, ...) {
+               isSlongLike <-
+               function (x)
+                   any(flintClassAny(x) == c("slong", "integer", "logical"))
+               maybeSlong <- TRUE
                if (!missing(from)) {
                if (length(from) != 1L)
                    stop(gettextf("length of '%s' is not %d",
@@ -1902,6 +2000,7 @@ setMethod("seq",
                    stop(gettextf("'%s' is not a finite number",
                                  "from"),
                         domain = NA)
+               maybeSlong <- maybeSlong && isSlongLike(from)
                }
                if (!missing(to)) {
                if (length(to) != 1L)
@@ -1912,6 +2011,7 @@ setMethod("seq",
                    stop(gettextf("'%s' is not a finite number",
                                  "to"),
                         domain = NA)
+               maybeSlong <- maybeSlong && isSlongLike(to)
                }
                if (!missing(by)) {
                if (length(by) != 1L)
@@ -1927,6 +2027,7 @@ setMethod("seq",
                    stop(gettextf("sign of to-from and sign of '%s' are not equal",
                                  "by"),
                         domain = NA)
+               maybeSlong <- maybeSlong && isSlongLike(by)
                }
                if (!missing(length.out)) {
                if (length(length.out) != 1L)
@@ -1937,11 +2038,11 @@ setMethod("seq",
                    stop(gettextf("'%s' is not a nonnegative number",
                                  "length.out"),
                         domain = NA)
-               else if (length.out >= if (flintABI() == 64L) 0x1p+64 else 0x1p+32)
+               else if (length.out >= ULONG_MAX + 1L)
                    stop(gettextf("value length would exceed maximum 2^%d-1",
                                  flintABI()),
                         domain = NA)
-               length.out <- as(length.out, "ulong")
+               length.out <- ulong(length.out)
                }
                if (!missing(along.with)) {
                if (!missing(length.out))
@@ -1950,18 +2051,17 @@ setMethod("seq",
                         domain = NA)
                length.out <- flintLengthAny(along.with)
                }
-               .seq <-
+               seqUlong <-
                function (from, length.out, reverse = FALSE)
-                   .Call(R_flint_ulong_seq, from, length.out, reverse)
-               zero <- ulong(0L)
-               unit <- ulong(1L)
+                   .Call(R_flint_ulong_seq, ulong(from), ulong(length.out), reverse)
+               ans <-
                switch(nargs() - ...length(),
                {
                    if (missing(length.out))
                        stop(gettextf("usage seq(%s=) is not yet implemented",
                                      if (missing(from)) if (missing(to)) "by" else "to" else "from"),
                             domain = NA)
-                   .seq(ulong(1L), length.out)
+                   seqUlong(1L, length.out)
                },
                {
                    if (missing(length.out) != missing(by))
@@ -1970,40 +2070,48 @@ setMethod("seq",
                             domain = NA)
                    if (missing(length.out)) {
                        d <- if (from <= to) { op <- `+`; to - from } else { op <- `-`; from - to }
-                       d. <- as(d, "fmpz")
-                       if (d. == d)
-                           d. <- d. + unit
-                       if (d. >= if (flintABI() == 64L) 0x1p+64 else 0x1p+32)
+                       length.out <- fmpz(d)
+                       if (length.out == d)
+                           length.out <- length.out + 1L
+                       if (length.out >= ULONG_MAX + 1L)
                            stop(gettextf("value length would exceed maximum 2^%d-1",
                                          flintABI()),
                                 domain = NA)
-                       op(from, .seq(zero, as(d., "ulong")))
+                       op(from, seqUlong(0L, length.out))
                    }
-                   else unit + by * .seq(zero, length.out)
+                   else 1L + by * seqUlong(0L, length.out)
                },
                {
                    if (missing(length.out)) {
                        d <- if (from == to) 0L else (to - from)/by
-                       d. <- as(d, "fmpz")
-                       if (d. == d)
-                           d. <- d. + unit
-                       if (d. >= if (flintABI() == 64L) 0x1p+64 else 0x1p+32)
+                       length.out <- fmpz(d)
+                       if (length.out == d)
+                           length.out <- length.out + 1L
+                       if (length.out >= ULONG_MAX + 1L)
                            stop(gettextf("value length would exceed maximum 2^%d-1",
                                          flintABI()),
                                 domain = NA)
-                       from + by * .seq(zero, as(d., "ulong"))
+                       from + by * seqUlong(0L, length.out)
                    }
                    else if (missing(by)) {
-                       by <- if (length.out <= unit) zero else (to - from)/(length.out - unit)
-                       from + by * .seq(zero, length.out)
+                       by <- if (length.out <= 1L) 0L else (to - from)/(length.out - 1L)
+                       from + by * seqUlong(0L, length.out)
                    }
                    else if (missing(to))
-                       from + by * .seq(zero, length.out)
-                   else to - by * .seq(zero, length.out, reverse = TRUE)
+                       from + by * seqUlong(0L, length.out)
+                   else to - by * seqUlong(0L, length.out, reverse = TRUE)
                },
                stop(gettextf("usage seq(%s=, %s=, %s=, %s=) is not yet implemented",
                              "from", "to", "by", if (missing(along.with)) "length.out" else "along.with"),
                     domain = NA))
+               if (maybeSlong && is(ans, "fmpz") &&
+                   (length.out == 0L ||
+                    {
+                        r <- ans[c.flint(1L, length.out)]
+                        all(r >= SLONG_MIN, r <= SLONG_MAX)
+                    }))
+                   slong(ans)
+               else ans
           })
 
 setMethod("sequence",
@@ -2047,6 +2155,13 @@ setMethod("summary",
               qq <- c(qq[1L:3L], mean(object), qq[4L:5L])
               qq@names <- c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max.")
               if (anyna) c(qq, "NaN" = sum(isna)) else qq
+          })
+
+setMethod("svd",
+          c(x = "flint"),
+          function (x, nu = min(n, p), nv = min(n, p), LINPACK = FALSE) {
+              n <- p <- NULL
+              .NotYetImplemented()
           })
 
 setMethod("t",

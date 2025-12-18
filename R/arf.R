@@ -87,7 +87,7 @@ setMethod("Ops",
 setMethod("Ops",
           c(e1 = "arf", e2 = "arf"),
           function (e1, e2)
-              .Call(R_flint_arf_ops2, .Generic, e1, e2, list()))
+              .Call(R_flint_arf_ops2, .Generic, e1, e2, NULL))
 
 setMethod("Ops",
           c(e1 = "arf", e2 = "acf"),
@@ -202,17 +202,17 @@ setMethod("backsolve",
 setMethod("chol",
           c(x = "arf"),
           function (x, ...)
-              .Call(R_flint_arf_ops1, "chol", x, list()))
+              .Call(R_flint_arf_ops1, "chol", x, NULL))
 
 setMethod("chol2inv",
           c(x = "arf"),
           function (x, ...)
-              .Call(R_flint_arf_ops1, "chol2inv", x, list()))
+              .Call(R_flint_arf_ops1, "chol2inv", x, NULL))
 
 setAs("ANY", "arf",
       function (from)
           .Call(R_flint_arf_initialize, flintNew("arf"), from, NULL,
-                dim(from), dimnames(from), names(from)))
+                dim(from), dimnames(from), names(from), NULL, NULL))
 
 setMethod("colMeans",
           c(x = "arf"),
@@ -224,15 +224,28 @@ setMethod("colSums",
           function (x, na.rm = FALSE, dims = 1, ...)
               .Call(R_flint_arf_ops1, "colSums", x, list(as.logical(na.rm), as.integer(dims))))
 
+setMethod("diff",
+          c(x = "arf"),
+          function (x, lag = 1L, differences = 1L, ...)
+              .Call(R_flint_arf_ops1, "diff", x,
+                    list(as.integer(lag), as.integer(differences))))
+
+setMethod("diffinv",
+          c(x = "arf"),
+          function (x, lag = 1L, differences = 1L, xi, ...)
+              .Call(R_flint_arf_ops1, "diffinv", x,
+                    list(as.integer(lag), as.integer(differences),
+                         if (!missing(xi)) as(xi, "arf"))))
+
 setMethod("format",
           c(x = "arf"),
-          function (x, base = 10L, digits = NULL,
-                    sep = NULL, rnd = flintRnd(), ...) {
-              if (is.null(digits))
-                  digits <- getOption("digits")
+          function (x, base = 10L, sep = NULL,
+                    digits = NULL, rnd = NULL, ...) {
               if (is.null(sep))
                   sep <- if (identical(base, 10L)) "e" else "@"
-              .Call(R_flint_arf_format, x, base, digits, sep, rnd)
+              if (is.null(digits))
+                  digits <- getOption("digits")
+              .Call(R_flint_arf_format, x, base, sep, digits, rnd)
           })
 
 setMethod("det",
@@ -277,6 +290,24 @@ setMethod("is.unsorted",
           function (x, na.rm = FALSE, strictly = FALSE)
               .Call(R_flint_arf_ops1, "is.unsorted", x, list(as.logical(na.rm), as.logical(strictly))))
 
+setMethod("isComplex",
+          c(x = "arf"),
+          function (x) FALSE)
+
+setMethod("isFloating",
+          c(x = "arf"),
+          function (x) TRUE)
+
+setMethod("isSigned",
+          c(x = "arf"),
+          function (x) TRUE)
+
+setMethod("log",
+          c(x = "arf"),
+          function (x, base, ...)
+              .Call(R_flint_arf_ops1, "log", x,
+                    if (!missing(base)) list(as(base, "arf"))))
+
 setMatrixOpsMethod(
           c(x = "ANY", y = "arf"),
           function (x, y) {
@@ -295,7 +326,7 @@ setMatrixOpsMethod(
           c(x = "arf", y = "ANY"),
           function (x, y) {
               if (.Generic != "%*%" && (missing(y) || is.null(y)))
-                  return(.Call(R_flint_arf_ops2, .Generic, x, x, list()))
+                  return(.Call(R_flint_arf_ops2, .Generic, x, x, NULL))
               g <- get(.Generic, mode = "function")
               switch(typeof(y),
                      "NULL" =, "raw" =, "logical" =, "integer" =, "double" =
@@ -335,7 +366,7 @@ setMatrixOpsMethod(
 setMatrixOpsMethod(
           c(x = "arf", y = "arf"),
           function (x, y)
-              .Call(R_flint_arf_ops2, .Generic, x, y, list()))
+              .Call(R_flint_arf_ops2, .Generic, x, y, NULL))
 
 setMatrixOpsMethod(
           c(x = "arf", y = "acf"),
@@ -386,7 +417,7 @@ setMethod("solve",
           c(a = "arf", b = "ANY"),
           function (a, b, ...) {
               if (missing(b))
-                  return(.Call(R_flint_arf_ops1, "solve", a, list()))
+                  return(.Call(R_flint_arf_ops1, "solve", a, NULL))
               switch(typeof(b),
                      "NULL" =, "raw" =, "logical" =, "integer" =, "double" =
                          solve(a, arf(b), ...),
@@ -425,7 +456,7 @@ setMethod("solve",
 setMethod("solve",
           c(a = "arf", b = "arf"),
           function (a, b, ...)
-              .Call(R_flint_arf_ops2, "solve", a, b, list()))
+              .Call(R_flint_arf_ops2, "solve", a, b, NULL))
 
 setMethod("solve",
           c(a = "arf", b = "acf"),

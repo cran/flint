@@ -62,6 +62,8 @@
 \alias{crossprod,mag,acb-method}
 \alias{det,mag-method}
 \alias{determinant,mag-method}
+\alias{diff,mag-method}
+\alias{diffinv,mag-method}
 \alias{is.finite,mag-method}
 \alias{is.infinite,mag-method}
 \alias{is.na,mag-method}
@@ -105,9 +107,9 @@
 \usage{
 ## Class generator functions
 
-mag(x = 0, length = 0L, names = NULL)
+mag(x = 0, length = 0L, names = NULL, rnd.mag = NULL)
 
-mag.array(x = 0, dim = length(x), dimnames = NULL)
+mag.array(x = 0, dim = length(x), dimnames = NULL, rnd.mag = NULL)
 }
 \arguments{
   \item{x}{
@@ -132,6 +134,10 @@ mag.array(x = 0, dim = length(x), dimnames = NULL)
     are either \code{NULL} or character vectors of length given by
     \code{dim}.  Non-character vector components of \code{dimnames} are
     coerced to character.}
+  \item{rnd.mag}{
+    the rounding mode used for inexact conversion.  \code{NULL} means to
+    round according to the global default rounding mode; see
+    \code{\link{flintRndMag}}.}
 }
 \value{
   A \code{mag} vector, possibly an array; see \sQuote{Details}.
@@ -154,14 +160,22 @@ mag(x, length=)}
 }
 \section{Conversion}{
   Magnitudes of real numbers and real parts of complex numbers are
-  rounded in the direction of 0 or \code{Inf} according to the default
-  rounding mode set by \code{\link{flintRnd}}.  Imaginary parts of
-  complex numbers are discarded.
+  rounded towards or away from zero according to the rounding mode set
+  by \code{rnd.mag}.  Imaginary parts of complex numbers are discarded.
+
+  It is guaranteed that the result of conversion is a lower or upper
+  bound on the converted value.  It is not guaranteed that the bound is
+  optimal; in particular, the result of conversion can be inexact even
+  if the converted value is exactly representable.  Indeed, the computed
+  bound and the optimal bound can differ by several ulps.  If that seems
+  unusual, then note that \code{mag} exists primarily to represent the
+  radii of \code{\linkS4class{arb}} and \code{\linkS4class{acb}}, and
+  arithmetic involving \code{arb} or \code{acb} benefits from fast and
+  \dQuote{precise enough} operations on the radii.
 
   Character strings are converted using function \code{mpfr_strtofr}
   from the \acronym{GNU} \acronym{MPFR} library with argument
-  \code{base} set to 0 and argument \code{rnd} set according to the
-  default rounding mode; see
+  \code{base} set to 0; see
   \url{https://www.mpfr.org/mpfr-current/mpfr.html#Assignment-Functions}.
 
   An error is signaled if elements of \code{x} are \code{NaN}.
@@ -173,50 +187,48 @@ mag(x, length=)}
   }
 }
 \section{Methods}{
+  Methods that return a \code{mag} vector are below marked by an
+  asterisk \samp{*} after \code{signature(\dots)}.  Where the generic
+  function is defined as evaluating a real-valued mathematical function
+  \eqn{F}{F(x)}, these methods compute lower or upper bounds on
+  \eqn{|F|}{abs(F(x))}.  In this sense, the marked methods can be seen
+  as violating the generic function's \dQuote{contract}.  For
+  contract-adhering behaviour, dispatch methods for \code{arf}, e.g.,
+  do \code{log(arf(x))} instead of \code{log(x)} for \code{x} of class
+  \code{mag}.  The bounds computed by the marked methods are not optimal
+  in general; see \sQuote{Conversion}.  Whether lower (as opposed to
+  upper) bounds are computed depends on the global default rounding
+  mode; see \code{\link{flintRndMag}}.
   \describe{
-    \item{\code{!}}{
+    \item{\code{\link{!}}}{
       \code{signature(x = "mag")}:\cr
       equivalent to (but faster than) \code{x == 0}.}
-    \item{\code{\%*\%}, \code{crossprod}, \code{tcrossprod}}{
+    \item{\code{\link{\%*\%}}, \code{\link{crossprod}}, \code{\link{tcrossprod}}}{
       \code{signature(x = "mag", y = "mag")}:\cr
       \code{signature(x = "mag", y = "ANY")}:\cr
       \code{signature(x = "ANY", y = "mag")}:\cr
-      matrix products.  The \dQuote{other} operand must be atomic or
-      inherit from virtual class \code{\linkS4class{flint}}.
-      \code{crossprod} and \code{tcrossprod} behave as if \code{y = x}
-      when \code{y} is missing or \code{NULL}.  Operands are promoted as
-      necessary and must be conformable (have compatible dimensions).
-      Non-array operands of length \code{k} are handled as 1-by-\code{k}
-      or \code{k}-by-1 matrices depending on the call.}
-    \item{\code{+}}{
-      \code{signature(e1 = "mag", e2 = "missing")}:\cr
+      coerces the \code{mag} operand to class \code{\linkS4class{arf}},
+      \code{\linkS4class{acf}}, \code{\linkS4class{arb}}, or
+      \code{\linkS4class{acb}} (depending on the class of the other
+      operand) and dispatches.}
+    \item{\code{\link{+}}, \code{\link{-}}}{
+      \code{signature(e1 = "mag", e2 = "missing")*}:\cr
       returns a copy of the argument.}
-    \item{\code{-}}{
-      \code{signature(e1 = "mag", e2 = "missing")}:\cr
-      returns a copy of the argument, to be consistent with the binary
-      operation which returns an upper bound for the absolute value of
-      the difference.}
-    \item{\code{Complex}}{
-      \code{signature(z = "mag")}:\cr
+    \item{\code{\link[methods]{Complex}}}{
+      \code{signature(z = "mag")*}:\cr
       mathematical functions of one argument; see
-      \code{\link[methods]{S4groupGeneric}}.  The return value is an
-      upper bound for the absolute value of the exact answer.}
-    \item{\code{Math}}{
-      \code{signature(x = "mag")}:\cr
+      \code{\link[methods]{S4groupGeneric}}.}
+    \item{\code{\link[methods]{Math}}}{
+      \code{signature(x = "mag")*}:\cr
       mathematical functions of one argument; see
-      \code{\link[methods]{S4groupGeneric}}.  The return value is an
-      upper bound for the absolute value of the exact answer.  Notably,
-      the (inverse) trigonometric, (inverse) hyperbolic, and
-      gamma-related member functions are not yet implemented.  Users
-      wanting those can (for now) operate on \code{\link{arb}(x)}.}
-    \item{\code{Math2}}{
-      \code{signature(x = "mag")}:\cr
+      \code{\link[methods]{S4groupGeneric}}.}
+    \item{\code{\link[methods]{Math2}}}{
+      \code{signature(x = "mag")*}:\cr
       decimal rounding according to a second argument \code{digits}; see
       \code{\link[methods]{S4groupGeneric}}.  There are just two member
-      functions: \code{\link{round}}, \code{\link{signif}}.  The return
-      value is an upper bound for the exact answer.}
-    \item{\code{Ops}}{
-      \code{signature(e1 = "mag", e2 = "mag")}:\cr
+      functions: \code{\link{round}}, \code{\link{signif}}.}
+    \item{\code{\link[methods]{Ops}}}{
+      \code{signature(e1 = "mag", e2 = "mag")*}:\cr
       \code{signature(e1 = "mag", e2 = "ANY")}:\cr
       \code{signature(e1 = "ANY", e2 = "mag")}:\cr
       binary arithmetic, comparison, and logical operators; see
@@ -225,35 +237,30 @@ mag(x, length=)}
       \code{\linkS4class{flint}}.  Operands are promoted as necessary.
       Array operands must be conformable (have identical dimensions).
       Non-array operands are recycled.  For arithmetic, the return value
-      is a \code{mag} vector only if both operands are \code{mag}
-      vectors.  In that case, the return value is an upper bound for the
-      absolute value of the exact answer.  Users wanting
-      \dQuote{standard} floating-point arithmetic must ensure that at
-      least one operand is not a \code{mag} vector.}
-    \item{\code{Summary}}{
-      \code{signature(x = "mag")}:\cr
+      is a \code{mag} vector if and only if both operands are \code{mag}
+      vectors.}
+    \item{\code{\link[methods]{Summary}}}{
+      \code{signature(x = "mag")*}:\cr
       univariate summary statistics; see
       \code{\link[methods]{S4groupGeneric}}.  The return value is a
-      logical vector of length 1 (\code{any}, \code{all}) or an
+      logical vector of length 1 (\code{any}, \code{all}) or a
       \code{mag} vector of length 1 or 2 (\code{sum}, \code{prod},
-      \code{min}, \code{max}, \code{range}).  For \code{sum} and
-      \code{prod}, the return value is an upper bound for the exact
-      answer.}
-    \item{\code{anyNA}}{
+      \code{min}, \code{max}, \code{range}).}
+    \item{\code{\link{anyNA}}}{
       \code{signature(x = "mag")}:\cr
       returns \code{FALSE}, as \code{mag} has no representation for
       \code{NaN}.}
-    \item{\code{as.vector}}{
+    \item{\code{\link{as.vector}}}{
       \code{signature(x = "mag")}:\cr
       returns \code{as.vector(y, mode)}, where \code{y} is a double
       vector containing the result of converting each element of
-      \code{x} to the range of double, rounding in the direction of
-      \code{Inf}, not always to nearest.  Coercion to types
+      \code{x} to the range of double, rounding away from zero though
+      not always to the nearest greater number.  Coercion to types
       \code{"character"}, \code{"symbol"} (synonym \code{"name"}),
       \code{"pairlist"}, \code{"list"}, and \code{"expression"}, which
       are not \dQuote{number-like}, is handled specially.  See also
       \code{\link{asVector}}.}
-    \item{\code{backsolve}}{
+    \item{\code{\link{backsolve}}}{
       \code{signature(r = "mag", x = "mag")}:\cr
       \code{signature(r = "mag", x = "ANY")}:\cr
       \code{signature(r = "ANY", x = "mag")}:\cr
@@ -261,58 +268,58 @@ mag(x, length=)}
       \code{\linkS4class{acf}}, \code{\linkS4class{arb}}, or
       \code{\linkS4class{acb}} (depending on the class of the other
       operand) and dispatches.}
-    \item{\code{chol}, \code{chol2inv}}{
+    \item{\code{\link{chol}}, \code{\link{chol2inv}}}{
       \code{signature(x = "mag")}:\cr
       coerces \code{x} to class \code{\linkS4class{arf}} and
       dispatches.}
-    \item{\code{coerce}}{
-      \code{signature(from = "ANY", to = "mag")}:\cr
+    \item{\code{\link[methods]{coerce}}}{
+      \code{signature(from = "ANY", to = "mag")*}:\cr
       returns the value of \code{mag(from)}.}
-    \item{\code{colSums}, \code{colMeans}}{
-      \code{signature(x = "mag")}:\cr
-      returns a \code{mag} vector or array containing upper bounds on
-      the column sums or means of \code{x}, defined as sums or means
-      over dimensions \code{1:dims}.}
-    \item{\code{det}, \code{determinant}}{
+    \item{\code{\link{colSums}}, \code{\link{colMeans}}}{
+      \code{signature(x = "mag")*}:\cr
+      returns a \code{mag} vector or array containing the column sums or
+      means of \code{x}, defined as sums or means over dimensions
+      \code{1:dims}.}
+    \item{\code{\link{det}}, \code{\link{determinant}}, \code{\link{diff}}, \code{\link[stats]{diffinv}}}{
       \code{signature(x = "mag")}:\cr
       coerces \code{x} to class \code{\linkS4class{arf}} and
       dispatches.}
-    \item{\code{format}}{
+    \item{\code{\link{format}}}{
       \code{signature(x = "mag")}:\cr
       returns a character vector suitable for printing, using scientific
       format.  Optional arguments control the output; see
       \code{\link{format-methods}}.}
-    \item{\code{is.finite}}{
+    \item{\code{\link{is.finite}}}{
       \code{signature(x = "mag")}:\cr
       returns a logical vector indicating which elements of \code{x}
       are not \code{Inf}.}
-    \item{\code{is.infinite}}{
+    \item{\code{\link{is.infinite}}}{
       \code{signature(x = "mag")}:\cr
       returns a logical vector indicating which elements of \code{x}
       are \code{Inf}.}
-    \item{\code{is.na}, \code{is.nan}}{
+    \item{\code{\link{is.na}}, \code{\link{is.nan}}}{
       \code{signature(x = "mag")}:\cr
       returns a logical vector whose elements are all \code{FALSE}, as
       \code{mag} has no representation for \code{NaN}.}
-    \item{\code{is.unsorted}}{
+    \item{\code{\link{is.unsorted}}}{
       \code{signature(x = "mag")}:\cr
       returns a logical indicating if \code{x} is not sorted in
       nondecreasing order (increasing order if optional argument
       \code{strictly} is set to \code{TRUE}).}
-    \item{\code{log}}{
-      \code{signature(x = "mag")}:\cr
-      returns an upper bound for the absolute value of the logarithm of
-      the argument.  The natural logarithm is computed by default (when
-      optional argument \code{base} is unset).}
-    \item{\code{mean}}{
-      \code{signature(x = "mag")}:\cr
-      returns an upper bound for the arithmetic mean.}
-    \item{\code{rowSums}, \code{rowMeans}}{
-      \code{signature(x = "mag")}:\cr
-      returns a \code{mag} vector or array containing upper bounds on
-      the row sums or means of \code{x}, defined as sums or means over
-      dimensions \code{(dims+1):length(dim(x))}.}
-    \item{\code{solve}}{
+    \item{\code{\link{log}}}{
+      \code{signature(x = "mag")*}:\cr
+      returns the logarithm of the argument.  The natural logarithm is
+      computed by default (when optional argument \code{base} is
+      unset).}
+    \item{\code{\link{mean}}}{
+      \code{signature(x = "mag")*}:\cr
+      returns the arithmetic mean.}
+    \item{\code{\link{rowSums}}, \code{\link{rowMeans}}}{
+      \code{signature(x = "mag")*}:\cr
+      returns a \code{mag} vector or array containing the row sums or
+      means of \code{x}, defined as sums or means over dimensions
+      \code{(dims+1):length(dim(x))}.}
+    \item{\code{\link{solve}}}{
       \code{signature(a = "mag", b = "mag")}:\cr
       \code{signature(a = "mag", b = "ANY")}:\cr
       \code{signature(a = "ANY", b = "mag")}:\cr
@@ -339,5 +346,40 @@ mag(x, length=)}
 \examples{
 showClass("mag")
 showMethods(classes = "mag")
+
+(ornd <- flintRndMag()) # getting the original rounding mode
+
+## Output gives 4 significant digits by default
+(magpi <- mag(pi))
+
+## Number of reliable digits is 8 == floor((30 - 1) * log10(2))
+as.character(magpi)
+
+## Integers in range of 30-bit unsigned type are converted exactly
+(x0 <- -1L:1L * (0x1p+30L - 1L))
+mag(x0) == abs(x0) #     all TRUE
+(x1 <- -1L:1L * (0x1p+30L - 0L))
+mag(x1) == abs(x1) # not all TRUE
+
+## Conversion of most other input is influenced by the rounding mode
+flintRndMag("A")
+mag( 1) >  1
+mag(pi) > pi
+flintRndMag("Z")
+mag( 1) <  1
+mag(pi) < pi
+
+## Computing bounds on composite functions needs care;
+## e.g., for an upper bound on abs(tan(2)) = sin(2)/abs(cos(2)):
+tt <- mag(2L) # exact
+flintRndMag("Z") # some quantities must be rounded towards 0
+cos2 <- cos(tt)
+flintRndMag("A") # others must be rounded away from 0
+sin2 <- sin(tt)
+tan2 <- sin2/cos2
+tan2    - abs(tan(2))
+tan(tt) - abs(tan(2)) # direct hence sharper
+
+flintRndMag(ornd) # resetting the original rounding mode
 }
 \keyword{classes}

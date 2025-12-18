@@ -30,9 +30,8 @@ SEXP R_flint_coerce_bigz_fmpz(SEXP from)
 	if (h < 0)
 		Rf_error(_("invalid"));
 	mp_limb_t j, n = (mp_limb_t) h;
-	fmpz *y = (n) ? flint_calloc(n, sizeof(fmpz)) : 0;
-	SEXP to = PROTECT(newObject("fmpz"));
-	R_flint_set(to, y, n, (R_CFinalizer_t) &R_flint_fmpz_finalize);
+	SEXP to = PROTECT(newFlint(R_FLINT_CLASS_FMPZ, 0, n));
+	fmpz *y = R_flint_get_pointer(to);
 	mpz_t t;
 	mpz_init(t);
 	for (j = 0; j < n; ++j) {
@@ -56,7 +55,7 @@ SEXP R_flint_coerce_fmpz_bigz(SEXP from)
 	R_flint_coerce_init();
 	mp_limb_t j, n = R_flint_get_length(from);
 	if (n > INT_MAX)
-		Rf_error(_("value length would exceed maximum %d"),
+		Rf_error(_("length would exceed maximum %d"),
 		         INT_MAX);
 	const fmpz *x = R_flint_get_pointer(from);
 	size_t words, count = 0;
@@ -111,9 +110,8 @@ SEXP R_flint_coerce_bigq_fmpq(SEXP from)
 	if (h < 0 || h != *(xd++))
 		Rf_error(_("invalid"));
 	mp_limb_t j, n = (mp_limb_t) h;
-	fmpq *y = (n) ? flint_calloc(n, sizeof(fmpq)) : 0;
-	SEXP to = PROTECT(newObject("fmpq"));
-	R_flint_set(to, y, n, (R_CFinalizer_t) &R_flint_fmpq_finalize);
+	SEXP to = PROTECT(newFlint(R_FLINT_CLASS_FMPQ, 0, n));
+	fmpq *y = R_flint_get_pointer(to);
 	mpz_t t;
 	mpz_init(t);
 	for (j = 0; j < n; ++j) {
@@ -151,7 +149,7 @@ SEXP R_flint_coerce_fmpq_bigq(SEXP from)
 	R_flint_coerce_init();
 	mp_limb_t j, n = R_flint_get_length(from);
 	if (n > INT_MAX)
-		Rf_error(_("value length would exceed maximum %d"),
+		Rf_error(_("length would exceed maximum %d"),
 		         INT_MAX);
 	const fmpq *x = R_flint_get_pointer(from);
 	size_t words[2], count[2] = { 0, 0 };
@@ -218,9 +216,8 @@ SEXP R_flint_coerce_mpfr_arf(SEXP from)
 {
 	R_flint_coerce_init();
 	mp_limb_t j, n = (mp_limb_t) XLENGTH(from);
-	arf_ptr y = (n) ? flint_calloc(n, sizeof(arf_t)) : 0;
-	SEXP to = PROTECT(newObject("arf"));
-	R_flint_set(to, y, n, (R_CFinalizer_t) &R_flint_arf_finalize);
+	SEXP to = PROTECT(newFlint(R_FLINT_CLASS_ARF, 0, n));
+	arf_ptr y = R_flint_get_pointer(to);
 	mpfr_prec_t tprec = MPFR_PREC_MIN;
 	for (j = 0; j < n; ++j) {
 		mpfr_prec_t tprec1 = INTEGER(R_do_slot(VECTOR_ELT(from, (R_xlen_t) j), R_Rmpfr_symbol_prec))[0];
@@ -250,25 +247,25 @@ SEXP R_flint_coerce_mpfr_arf(SEXP from)
 		(((u) <= ((utype) -1 >> 1)) ? (stype) u : -(stype) ~(u) - 1)
 #define SIGNED_EXPONENT(u) \
 		SIGNED((u), mpfr_uexp_t, mpfr_exp_t)
-		
+
 #if SIZEOF_MPFR_EXP_T == 4
 		t->_mpfr_exp = SIGNED_EXPONENT(exp[0]);
 #else
 		t->_mpfr_exp = SIGNED_EXPONENT(((mpfr_uexp_t) exp[1] << 32) | ((mpfr_uexp_t) exp[0] & 0x00000000FFFFFFFFu));
 #endif
 		if (XLENGTH(sd) == 0)
-		memset(t->_mpfr_d, 0, nlimb * sizeof(mp_limb_t));
+		memset(t->_mpfr_d, 0, (size_t) nlimb * sizeof(mp_limb_t));
 		else {
 		nlimb1 = (t->_mpfr_prec - 1)/mp_bits_per_limb + 1;
 		nlimb0 = nlimb - nlimb1;
 		ptr = t->_mpfr_d;
-		for (mp_limb_t l = 0; l < nlimb0; ++l)
+		for (mp_size_t l = 0; l < nlimb0; ++l)
 			*(ptr++) = 0;
 #if SIZEOF_MP_LIMB_T == 4
-		for (mp_limb_t l = 0; l < nlimb1; ++l, d += 1)
+		for (mp_size_t l = 0; l < nlimb1; ++l, d += 1)
 			*(ptr++) = d[0];
 #else
-		for (mp_limb_t l = 0; l < nlimb1; ++l, d += 2)
+		for (mp_size_t l = 0; l < nlimb1; ++l, d += 2)
 			*(ptr++) = ((mp_limb_t) d[1] << 32) | ((mp_limb_t) d[0] & 0x00000000FFFFFFFFu);
 #endif
 		}
@@ -285,7 +282,7 @@ SEXP R_flint_coerce_arf_mpfr(SEXP from)
 	R_flint_coerce_init();
 	mp_limb_t j, n = R_flint_get_length(from);
 	if (n > R_XLEN_T_MAX)
-		Rf_error(_("value length would exceed maximum %lld"),
+		Rf_error(_("length would exceed maximum %lld"),
 		         (long long int) R_XLEN_T_MAX);
 	arf_srcptr x = R_flint_get_pointer(from);
 	slong fprec = 0;
@@ -313,8 +310,8 @@ SEXP R_flint_coerce_arf_mpfr(SEXP from)
 		SEXP elt = PROTECT(newObject("mpfr1")),
 			sprec = PROTECT(Rf_allocVector(INTSXP, 1)),
 			ssign = PROTECT(Rf_allocVector(INTSXP, 1)),
-			sexp  = PROTECT(Rf_allocVector(INTSXP, sizeof(mpfr_exp_t)/sizeof(int))),
-			sd    = PROTECT(Rf_allocVector(INTSXP, sizeof(mp_limb_t)/sizeof(int) * ((mpfr_regular_p(t)) ? (tprec - 1)/mp_bits_per_limb + 1 : 0)));
+			sexp  = PROTECT(Rf_allocVector(INTSXP, (R_xlen_t) (sizeof(mpfr_exp_t)/sizeof(int)))),
+			sd    = PROTECT(Rf_allocVector(INTSXP, (R_xlen_t) (sizeof(mp_limb_t)/sizeof(int)) * ((mpfr_regular_p(t)) ? (tprec - 1)/mp_bits_per_limb + 1 : 0)));
 		int
 			*prec = (void *) INTEGER(sprec),
 			*sign = (void *) INTEGER(ssign);

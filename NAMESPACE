@@ -3,35 +3,43 @@ useDynLib(flint, .registration = TRUE)
 importClassesFrom(methods, classGeneratorFunction)
 
 importFrom(methods, .slotNames, Complex, Math, Math2, Ops, Summary, as,
-           callGeneric, callNextMethod, cbind2, coerce, getClassDef,
-           new, "packageSlot<-", rbind2, selectMethod, setAs, setClass,
-           setClassUnion, setGeneric, setMethod, show)
-importFrom(stats, quantile, runif)
+           callGeneric, callNextMethod, cbind2, coerce, getClass,
+           getClassDef, is, kronecker, new, "packageSlot<-", rbind2,
+           selectMethod, setAs, setClass, setClassUnion, setGeneric,
+           setMethod, show)
+importFrom(stats, diffinv, quantile, runif)
 
 exportClasses(flint, ulong, slong, fmpz, fmpq, mag, arf, acf, arb, acb,
               OptionalInteger, OptionalList, OptionalCharacter)
 
 ## Generic functions in this package:
 exportMethods(Num, "Num<-", Den, "Den<-", Mid, "Mid<-", Rad, "Rad<-",
-              Real, "Real<-", Imag, "Imag<-")
+              Real, "Real<-", Imag, "Imag<-", isComplex, isFloating,
+              isSigned)
 ## Generic functions in 'base':
 exportMethods("!", "$", "$<-", "%*%", "+", "-", "[", "[<-", "[[",
               "[[<-", all.equal, anyDuplicated, anyNA, aperm, as.raw,
               as.logical, as.integer, as.numeric, as.complex, as.vector,
               as.matrix, as.array, as.data.frame, as.Date, as.POSIXct,
-              as.POSIXlt, asplit, backsolve, c, cbind2, chol, chol2inv,
+              as.POSIXlt, asplit, backsolve, c, chol, chol2inv,
               colMeans, colSums, crossprod, cut, det, determinant, diag,
-              "diag<-", dim, "dim<-", dimnames, "dimnames<-", drop,
-              duplicated, findInterval, format, identical, is.array,
-              is.finite, is.infinite, is.matrix, is.na, "is.na<-",
-              is.nan, isSymmetric, is.unsorted, length, "length<-", log,
-              match, mean, mtfrm, names, "names<-", norm, print, rbind2,
-              rep, rep.int, rep_len, rowMeans, rowSums, seq, sequence,
-              solve, summary, t, tcrossprod, unique, xtfrm)
+              "diag<-", diff, dim, "dim<-", dimnames, "dimnames<-",
+              drop, duplicated, eigen, findInterval, format, identical,
+              is.array, is.finite, is.infinite, is.matrix, is.na,
+              "is.na<-", is.nan, isSymmetric, is.unsorted, length,
+              "length<-", log, match, mean, mtfrm, names, "names<-",
+              norm, outer, print, qr, rcond, rep, rep.int, rep_len,
+              rowMeans, rowSums, scale, seq, sequence, solve, summary,
+              svd, t, tcrossprod, unique, xtfrm)
 ## Generic functions in 'methods':
-exportMethods(Complex, Math, Math2, Ops, Summary, coerce, show)
+exportMethods(Complex, Math, Math2, Ops, Summary, cbind2, coerce,
+              kronecker, rbind2, show)
 ## Generic functions in 'stats':
-exportMethods(quantile)
+exportMethods(diffinv, quantile)
+
+export(ULONG_MAX,
+       SLONG_MIN,
+       SLONG_MAX)
 
 export(flint, flint.array,
        ulong, ulong.array,
@@ -56,6 +64,7 @@ export(c.flint,
        flintLength,
        flintPrec,
        flintRnd,
+       flintRndMag,
        flintSize,
        flintTriple,
        flintVersion,
@@ -64,12 +73,16 @@ export(c.flint,
        arb_const_log2,
        arb_const_log10,
        arb_const_e,
+       arf_rk,
+       arb_integrate,
+       acb_integrate,
        arb_lambertw,
        acb_lambertw,
        arb_dirichlet_zeta,
        acb_dirichlet_zeta,
        arb_dirichlet_hurwitz,
        acb_dirichlet_hurwitz,
+       arb_dirichlet_lerch_phi,
        acb_dirichlet_lerch_phi,
        arb_hypgeom_bessel_j,
        acb_hypgeom_bessel_j,
@@ -85,6 +98,7 @@ export(c.flint,
        acb_hypgeom_rgamma,
        arb_hypgeom_lgamma,
        acb_hypgeom_lgamma,
+       arb_hypgeom_polygamma,
        acb_hypgeom_polygamma,
        arb_hypgeom_gamma_lower,
        acb_hypgeom_gamma_lower,
@@ -110,6 +124,8 @@ S3method(c, flint)
 S3method(cbind, flint)
 S3method(chol, flint, .S3.chol.flint)
 S3method(determinant, flint, .S3.determinant.flint)
+S3method(diff, flint, .S3.diff.flint)
+S3method(diffinv, flint, .S3.diffinv.flint)
 S3method(duplicated, flint, .S3.duplicated.flint)
 S3method(format, flint, .S3.format.flint)
 S3method("is.na<-", flint, ".S3.is.na<-.flint")
@@ -117,11 +133,13 @@ S3method(is.unsorted, flint, .S3.is.unsorted.flint)
 S3method(isSymmetric, flint, .S3.isSymmetric.flint)
 S3method(mean, flint, .S3.mean.flint)
 S3method(mtfrm, flint, .S3.mtfrm.flint)
+S3method(qr, flint, .S3.qr.flint)
 S3method(print, flint, .S3.print.flint)
 S3method(quantile, flint, .S3.quantile.flint)
 S3method(rbind, flint)
 S3method(rep.int, flint, .S3.rep.int.flint)
 S3method(rep_len, flint, .S3.rep_len.flint)
+S3method(scale, flint, .S3.scale.flint)
 S3method(seq, flint, .S3.seq.flint)
 S3method(sequence, flint, .S3.sequence.flint)
 S3method(solve, flint, .S3.solve.flint)

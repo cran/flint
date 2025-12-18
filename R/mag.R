@@ -82,7 +82,7 @@ setMethod("Ops",
 setMethod("Ops",
           c(e1 = "mag", e2 = "mag"),
           function (e1, e2)
-              .Call(R_flint_mag_ops2, .Generic, e1, e2, list()))
+              .Call(R_flint_mag_ops2, .Generic, e1, e2, NULL))
 
 setMethod("Ops",
           c(e1 = "mag", e2 = "arf"),
@@ -124,7 +124,7 @@ setMethod("as.vector",
                      "pairlist" =, "list" =, "expression" =
                          .Call(R_flint_list, x, mode),
                      "symbol" =, "name" =, "character" =
-                         as.vector(format(x, digits = 15L, rnd = "A"), mode),
+                         as.vector(format(x, digits.mag = 8L, rnd.mag = "A"), mode),
                      as.vector(.Call(R_flint_mag_atomic, x), mode)))
 
 setMethod("backsolve",
@@ -212,7 +212,7 @@ setMethod("chol2inv",
 setAs("ANY", "mag",
       function (from)
           .Call(R_flint_mag_initialize, flintNew("mag"), from, NULL,
-                dim(from), dimnames(from), names(from)))
+                dim(from), dimnames(from), names(from), NULL))
 
 setMethod("colMeans",
           c(x = "mag"),
@@ -234,15 +234,25 @@ setMethod("determinant",
           function (x, logarithm = TRUE, ...)
               determinant(arf(x), logarithm = logarithm, ...))
 
+setMethod("diff",
+          c(x = "mag"),
+          function (x, ...)
+              diff(arf(x), ...))
+
+setMethod("diffinv",
+          c(x = "mag"),
+          function (x, ...)
+              diffinv(arf(x), ...))
+
 setMethod("format",
           c(x = "mag"),
-          function (x, base = 10L, digits.mag = NULL,
-                    sep = NULL, rnd = flintRnd(), ...) {
-              if (is.null(digits.mag))
-                  digits.mag <- getOption("digits.mag", 4L)
+          function (x, base = 10L, sep = NULL,
+                    digits.mag = NULL, rnd.mag = NULL, ...) {
               if (is.null(sep))
                   sep <- if (identical(base, 10L)) "e" else "@"
-              .Call(R_flint_mag_format, x, base, digits.mag, sep, rnd)
+              if (is.null(digits.mag))
+                  digits.mag <- getOption("digits.mag", 4L)
+              .Call(R_flint_mag_format, x, base, sep, digits.mag, rnd.mag)
           })
 
 setMethod("is.finite",
@@ -269,6 +279,18 @@ setMethod("is.unsorted",
           c(x = "mag"),
           function (x, na.rm = FALSE, strictly = FALSE)
               .Call(R_flint_mag_ops1, "is.unsorted", x, list(NULL, as.logical(strictly))))
+
+setMethod("isComplex",
+          c(x = "mag"),
+          function (x) FALSE)
+
+setMethod("isFloating",
+          c(x = "mag"),
+          function (x) TRUE)
+
+setMethod("isSigned",
+          c(x = "mag"),
+          function (x) FALSE)
 
 setMethod("log",
           c(x = "mag"),
