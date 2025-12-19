@@ -1,6 +1,20 @@
 \name{NEWS}
 \title{News for \R{} Package \pkg{flint}}
 \newcommand{\GH}{\href{https://github.com/jaganmn/flint/issues/#1}{GH##1}}
+\section{Changes in version 0.1.4 (2025-12-18)}{
+  \subsection{Compatibility}{
+    \itemize{
+      \item \proglang{C} function \code{ATTRIB} was called in a few
+      places despite not belonging to \R{}'s \proglang{C} API.
+    }
+  }
+  \subsection{Installation}{
+    \itemize{
+      \item Installation failed on some platforms due to labels without
+      statements in several \file{src/*.c}.
+    }
+  }
+}
 \section{Changes in version 0.1.3 (2025-12-15)}{
   \subsection{Description}{
     \itemize{
